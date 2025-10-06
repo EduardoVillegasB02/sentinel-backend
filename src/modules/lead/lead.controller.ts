@@ -1,0 +1,50 @@
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Patch,
+  Param,
+  Delete,
+  ParseUUIDPipe,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
+import { LeadService } from './lead.service';
+import { CreateLeadDto, UpdateLeadDto } from './dto';
+import { JwtAuthGuard, Roles, RolesGuard } from '../../auth/guard';
+import { SearchDto } from '../../common/dto';
+
+@UseGuards(JwtAuthGuard, RolesGuard)
+@Controller('lead')
+export class LeadController {
+  constructor(private readonly leadService: LeadService) {}
+
+  @Roles('administrator', 'supervisor')
+  @Post()
+  create(@Body() dto: CreateLeadDto) {
+    return this.leadService.create(dto);
+  }
+
+  @Get()
+  findAll(@Query() dto: SearchDto) {
+    return this.leadService.findAll(dto);
+  }
+
+  @Get(':id')
+  findOne(@Param('id', ParseUUIDPipe) id: string) {
+    return this.leadService.findOne(id);
+  }
+
+  @Roles('administrator', 'supervisor')
+  @Patch(':id')
+  update(@Param('id', ParseUUIDPipe) id: string, @Body() dto: UpdateLeadDto) {
+    return this.leadService.update(id, dto);
+  }
+
+  @Roles('administrator', 'supervisor')
+  @Delete(':id')
+  delete(@Param('id', ParseUUIDPipe) id: string) {
+    return this.leadService.delete(id);
+  }
+}

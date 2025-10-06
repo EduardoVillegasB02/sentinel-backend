@@ -1,0 +1,145 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Regime {
+  cas_276
+  cas_728
+  cas_1057
+  locador
+}
+
+enum Rol {
+  administrator
+  supervisor
+  sentinel
+}
+
+enum Shift {
+  morning
+  afternoon
+  nigth
+}
+
+model Bodycam {
+  id                    String                @id @default(uuid())
+  name                  String
+  reports               Report[]
+  created_at            DateTime              @default(now())
+  updated_at            DateTime              @updatedAt
+  deleted_at            DateTime?
+}
+
+model Evidence {
+  id                    String                @id @default(uuid())
+  description           String
+  path                  String
+  mime_type             String
+  size                  Int
+  created_at            DateTime              @default(now())
+  updated_at            DateTime              @updatedAt
+  deleted_at            DateTime?
+}
+
+model Job {
+  id                    String                @id @default(uuid())
+  name                  String
+  description           String?
+  leads                 Lead[]
+  created_at            DateTime              @default(now())
+  updated_at            DateTime              @updatedAt
+  deleted_at            DateTime?
+}
+
+model Lack {
+  id                    String                @id @default(uuid())
+  name                  String
+  article               String
+  description           String
+  reports               Report[]
+  created_at            DateTime              @default(now())
+  updated_at            DateTime              @updatedAt
+  deleted_at            DateTime?
+}
+
+model Lead {
+  id                    String                @id @default(uuid())
+  name                  String
+  lastname              String
+  job                   Job                   @relation(fields: [job_id], references: [id])
+  job_id                String
+  created_at            DateTime              @default(now())
+  updated_at            DateTime              @updatedAt
+  deleted_at            DateTime?
+}
+
+model Offender {
+  id                    String                @id @default(uuid())
+  name                  String
+  lastname              String
+  dni                   String
+  gestionate_id         Int
+  subgerencia           String
+  job                   String
+  regime                Regime
+  shift                 Shift
+  reports               Report[]
+  created_at            DateTime              @default(now())
+  updated_at            DateTime              @updatedAt
+  deleted_at            DateTime?
+}
+
+model Report {
+  id                    String                @id @default(uuid())
+  message               String
+  address               String
+  latitude              Float
+  longitude             Float
+  cam_user              String
+  path                  String
+  bodycam               Bodycam               @relation(fields: [bodycam_id], references: [id])
+  bodycam_id            String
+  lack                  Lack                  @relation(fields: [lack_id], references: [id])
+  lack_id               String
+  offender              Offender              @relation(fields: [offender_id], references: [id])
+  offender_id           String
+  subject               Subject               @relation(fields: [subject_id], references: [id])
+  subject_id            String
+  user                  User                  @relation(fields: [user_id], references: [id])
+  user_id               String
+  created_at            DateTime              @default(now())
+  updated_at            DateTime              @updatedAt
+  deleted_at            DateTime?
+}
+
+model Subject {
+  id                    String                @id @default(uuid())
+  name                  String
+  description           String
+  reports               Report[]
+  created_at            DateTime              @default(now())
+  updated_at            DateTime              @updatedAt
+  deleted_at            DateTime?
+}
+
+model User {
+  id                    String                @id @default(uuid())
+  username              String                @unique
+  password              String
+  name                  String
+  lastname              String
+  email                 String                @unique
+  dni                   String?               @unique
+  phone                 String?               @unique
+  token                 String?
+  rol                   Rol
+  reports               Report[]
+  created_at            DateTime              @default(now())
+  updated_at            DateTime              @updatedAt
+  deleted_at            DateTime?
+}

@@ -1,0 +1,80 @@
+import { BadRequestException, Injectable } from '@nestjs/common';
+import { Lack } from '@prisma/client';
+import { CreateLackDto, UpdateLackDto } from './dto';
+import { PrismaService } from '../../prisma/prisma.service';
+import { SearchDto } from '../../common/dto';
+import { paginationHelper } from '../../common/helpers';
+
+@Injectable()
+export class LackService {
+  constructor(private prisma: PrismaService) {}
+
+  async create(dto: CreateLackDto): Promise<Lack> {
+    const lack = await this.prisma.lack.create({ data: dto });
+    return this.getLackById(lack.id);
+  }
+
+  async findAll(dto: SearchDto): Promise<any> {
+    const { search, ...pagination } = dto;
+    const where: any = { deleted_at: null };
+    if (search) where.name = { contains: search, mode: 'insensitive' };
+    return await paginationHelper(
+      this.prisma.lack,
+      {
+        select: {
+          id: true,
+          name: true,
+          article: true,
+          description: true,
+        },
+        where,
+        orderBy: { name: 'asc' },
+      },
+      pagination,
+    );
+  }
+
+  async findOne(id: string): Promise<Lack> {
+    return await this.getLackById(id);
+  }
+
+  async update(id: string, dto: UpdateLackDto): Promise<Lack> {
+    await this.getLackById(id);
+    await this.prisma.lack.update({
+      data: dto,
+      where: { id },
+    });
+    return await this.getLackById(id);
+  }
+
+  async delete(id: string): Promise<Lack> {
+    await this.getLackById(id);
+    await this.prisma.lack.update({
+      data: { deleted_at: new Date() },
+      where: { id },
+    });
+    return await this.getLackById(id, true);
+  }
+
+  private async getLackById(
+    id: string,
+    isDeleted: boolean = false,
+  ): Promise<any> {
+    const lack = await this.prisma.lack.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        name: true,
+        article: true,
+        description: true,
+        deleted_at: true,
+      },
+    });
+    if (isDeleted) return lack;
+    if (!lack)
+      throw new BadRequestException('Falta disciplinaria no encontrada');
+    if (lack.deleted_at)
+      throw new BadRequestException('Falta disciplinaria eliminada');
+    return lack;
+  }
+}
