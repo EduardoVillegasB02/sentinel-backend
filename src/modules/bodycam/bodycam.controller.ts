@@ -9,7 +9,10 @@ import {
   ParseUUIDPipe,
   Query,
   UseGuards,
+  UploadedFile,
+  UseInterceptors,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import { BodycamService } from './bodycam.service';
 import { CreateBodycamDto, UpdateBodycamDto } from './dto';
 import { JwtAuthGuard, Roles, RolesGuard } from '../../auth/guard';
@@ -49,5 +52,12 @@ export class BodycamController {
   @Delete(':id')
   delete(@Param('id', ParseUUIDPipe) id: string) {
     return this.bodycamService.delete(id);
+  }
+
+  @Roles('administrator')
+  @Post('upload')
+  @UseInterceptors(FileInterceptor('file'))
+  bulkUpload(@UploadedFile() file: Express.Multer.File) {
+    return this.bodycamService.bulkUpload(file);
   }
 }

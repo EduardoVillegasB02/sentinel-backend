@@ -1,0 +1,208 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8"/>
+<meta http-equiv="Content-Security-Policy" content="img-src data: http: https: file:;">
+<title>Informe Falta</title>
+<style>
+  @page {
+    size: A4;
+    margin: 20mm 20mm 20mm 20mm;
+  }
+  html, body {
+    height: 100%;
+  }
+  body {
+    font-family: 'Times New Roman', Times, serif;
+    color: #111;
+    font-size: 16px;
+    line-height: 1.38;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* LINES */
+  .rule {
+    border-top: 1px solid #222;
+    height: 0;
+    margin: 0;
+  }
+  .divider {
+    margin: 8px 0;
+  }
+  .divider span {
+    display: block;
+    border-top: 1px solid #222;
+    height:0;
+  }
+  .divider span + span {
+    margin-top: 2px;
+  }
+
+  /* HEADER */
+  .header {
+    text-align: center;
+    margin-bottom: 10px;
+  }
+  .logo {
+    height: 58px;
+    object-fit: contain;
+    display: inline-block;
+  }
+
+  /* TITLE */
+  .slogan {
+    margin-top: 16px;
+    font-size: 14px;
+    color: #444;
+    text-align: center;
+  }
+  .report-number{
+    font-weight: 700;
+    text-align: center;
+    text-transform: uppercase;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    margin: 16px 0 16px;
+  }
+
+  /* DATA-HEADER */
+  .block {
+    margin-top: 12px;
+    margin-bottom: 12px;
+  }
+  .meta{
+    width: 100%;
+    border-collapse: collapse;
+    table-layout: fixed;
+  }
+  .meta td{
+    padding: 2px 0;
+    vertical-align: top;
+  }
+  .meta .lbl{
+    width:110px;
+    text-transform: uppercase;
+    letter-spacing: .2px;
+    font-weight: 600;
+    padding-right: 6px;
+  }
+  .meta .colon{
+    width: 10px;
+    text-align: center;
+  }
+  .meta .val{
+    padding-left: 6px;
+  }
+
+  /* BODY */
+  .intro{
+    margin-top: 12px;
+    margin-bottom: 6px;
+  }
+  .body{
+    white-space: pre-line;
+    text-align: justify;
+  }
+
+  /* Enfasis */
+  .u {
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
+  .b {
+    font-weight: 700; }
+  .i {
+    font-style: italic;
+  }
+  .uc {
+    text-transform: uppercase;
+  }
+
+  /* FOOTER */
+  .footer{
+    position: fixed;
+    left: 1mm;
+    right: 1mm;
+    bottom: 1mm;
+    text-align: center;
+    font-size: 14px;
+    color: #444;
+    padding-top: 6px;
+  }
+  .footer::before{
+    content:"";
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    border-top: 1px solid #222;
+    height: 0;
+  }
+
+  /* Evitar cortes */
+  .block, .header { page-break-inside: avoid; }
+</style>
+</head>
+<body>
+
+  <!-- CABECERA -->
+  <div class="header">
+    <img class="logo" src="http://localhost:3020/static/logo.png" alt="Logo Municipalidad">
+    
+  </div>
+  <div class="rule"></div>
+
+  <div class="slogan">“Año de la recuperación y consolidación de la economía peruana”</div> 
+  <div class="report-number">Informe N° 003-2025-CS-SS-GOP/MDSJL</div>
+
+  <!-- BLOQUE DATOS -->
+  <section class="block">
+    <table class="meta">
+      {{#if header.to}}
+      <tr>
+        <td class="lbl">A</td><td class="colon">:</td>
+        <td class="val" style="line-height:1.2;">
+          <div style="font-weight:600;">{{header.to.name}}</div>
+          <div style="margin-top:1px; font-weight:400; margin-bottom:2px">{{header.to.job}}</div>
+        </td>
+      </tr>
+      {{/if}}
+      {{#if header.cc}}
+      <tr>
+        <td class="lbl">CC</td><td class="colon">:</td>
+        <td class="val" style="line-height:1.2;">
+          <div style="font-weight:600;">{{header.cc.name}}</div>
+          <div style="margin-top:1px; font-weight:400; margin-bottom:2px">{{header.cc.job}}</div>
+        </td>
+      </tr>
+      {{/if}}
+      <tr>
+        <td class="lbl">DE</td><td class="colon">:</td>
+        <td class="val uc">{{header.from}}</td></tr>
+      <tr>
+        <td class="lbl">ASUNTO</td><td class="colon">:</td>
+        <td class="val uc">{{header.subject}}</td>
+      </tr>
+      <tr>
+        <td class="lbl">FECHA</td><td class="colon">:</td>
+        <td class="val">{{header.date}}</td>
+      </tr>
+    </table>
+  </section>
+
+  <!-- EXACTAMENTE DOS LÍNEAS antes del mensaje -->
+  <div class="divider"><span></span><span></span></div>
+
+  <!-- CUERPO -->
+  <p class="intro">Es grato dirigirme a Ud. con la finalidad de informarle lo siguiente:</p>
+  <div class="body">{{{message}}}</div>
+
+  <!-- PIE -->
+  <div class="footer">
+    Sede CECOM de la Sub Gerencia de Serenazgo<br/>
+    Av. Santa Rosa de Lima, San Juan de Lurigancho 15427
+  </div>
+
+</body>
+</html>

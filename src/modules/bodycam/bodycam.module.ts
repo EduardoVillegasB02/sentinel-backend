@@ -6,5 +6,6 @@ import { PrismaService } from 'src/prisma/prisma.service';
 @Module({
   controllers: [BodycamController],
   providers: [BodycamService, PrismaService],
+  exports: [BodycamService],
 })
 export class BodycamModule {}

@@ -6,37 +6,53 @@ import {
   Patch,
   Param,
   Delete,
+  Req,
+  UseGuards,
+  Res,
 } from '@nestjs/common';
-import { ReportService } from './report.service';
-import { CreateReportDto } from './dto/create-report.dto';
-import { UpdateReportDto } from './dto/update-report.dto';
+import { readFileSync, existsSync } from 'fs';
+import { join } from 'path';
 
+import { ReportService } from './report.service';
+import { CreateMessageDto, CreateReportDto } from './dto';
+import { JwtAuthGuard, RolesGuard } from '../../auth/guard';
+import { Response } from 'express';
+import { pathToFileURL } from 'url';
+
+@UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('report')
 export class ReportController {
   constructor(private readonly reportService: ReportService) {}
 
-  @Post()
-  create(@Body() createReportDto: CreateReportDto) {
-    return this.reportService.create(createReportDto);
+  @Post('message')
+  createMessage(@Body() dto: CreateMessageDto, @Req() req: any) {
+    return this.reportService.createMessage(dto, req.user);
   }
 
-  @Get()
-  findAll() {
-    return this.reportService.findAll();
-  }
+  @Post('page')
+  async page1(@Body() data: any, @Res() res: Response) {
+    const logoPath = join(process.cwd(), 'client', 'logo.png');
+    if (!existsSync(logoPath)) throw new Error('No se encontró ' + logoPath);
+    const logoFileSrc = pathToFileURL(logoPath).href;
+    const payload = { ...data, logoFileSrc };
+    const templatePath = join(
+      process.cwd(),
+      'src',
+      'modules',
+      'report',
+      'templates',
+      'disciplinary-lack.hbs',
+    );
+    const templateHtml = readFileSync(templatePath, 'utf8');
 
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.reportService.findOne(+id);
-  }
+    const pdf = await this.reportService.firstPagePdf(payload, templateHtml);
 
-  @Patch(':id')
-  update(@Param('id') id: string, @Body() updateReportDto: UpdateReportDto) {
-    return this.reportService.update(+id, updateReportDto);
-  }
+    const filename = payload?.header?.numero
+      ? `informe-${payload.header.numero}-pag1.pdf`
+      : 'informe-pag1.pdf';
 
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.reportService.remove(+id);
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    res.send(pdf);
   }
 }

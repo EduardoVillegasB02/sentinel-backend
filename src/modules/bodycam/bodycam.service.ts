@@ -1,5 +1,6 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { Bodycam } from '@prisma/client';
+import * as xlsx from 'xlsx';
 import { CreateBodycamDto, UpdateBodycamDto } from './dto';
 import { PrismaService } from '../../prisma/prisma.service';
 import { SearchDto } from '../../common/dto';
@@ -52,6 +53,24 @@ export class BodycamService {
       where: { id },
     });
     return await this.getBodycamById(id, true);
+  }
+
+  async bulkUpload(file: Express.Multer.File) {
+    const workbook = xlsx.read(file.buffer, { type: 'buffer' });
+    const sheetName = workbook.SheetNames[0];
+    const rows = xlsx.utils.sheet_to_json(workbook.Sheets[sheetName]);
+    const bodycams = rows.map((row: any) => {
+      return {
+        name: row.name,
+        serie: row.serie,
+      };
+    });
+    await this.prisma.bodycam.createMany({
+      data: bodycams,
+    });
+    return {
+      message: 'Creación masiva exitosa',
+    };
   }
 
   private async getBodycamById(

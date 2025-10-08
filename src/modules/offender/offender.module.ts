@@ -7,5 +7,6 @@ import { ExternalModule } from '../../external/external.module';
   imports: [ExternalModule],
   controllers: [OffenderController],
   providers: [OffenderService],
+  exports: [OffenderService],
 })
 export class OffenderModule {}

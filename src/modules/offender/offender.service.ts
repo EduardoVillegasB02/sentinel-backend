@@ -10,13 +10,14 @@ import { ExternalService } from 'src/external/external.service';
 export class OffenderService {
   constructor(
     private external: ExternalService,
-    private prisma: PrismaService
+    private prisma: PrismaService,
   ) {}
 
   async create(dto: CreateOffenderDto): Promise<any> {
     //const offender = await this.prisma.offender.create({ data: dto });
     //return this.getOffenderById(offender.id);
-    return this.external.getExternalUser('75326417');
+    const h = await this.external.getExternalUser('75326418');
+    console.log(h);
   }
 
   async findAll(dto: SearchDto): Promise<any> {
@@ -57,6 +58,23 @@ export class OffenderService {
       where: { id },
     });
     return await this.getOffenderById(id, true);
+  }
+
+  async verifyPersonal(dni: string) {
+    const personal = await this.external.getExternalUser(dni);
+    if (!personal)
+      throw new BadRequestException(
+        'El personal con ese DNI no se encuentra en el Gestionate',
+      );
+    return {
+      id: personal.id,
+      name: personal.nombres,
+      lastname: personal.apellidos,
+      job: personal.cargo.nombre,
+      regime: personal.regimenLaboral.nombre,
+      shift: personal.turno.nombre,
+      subgerencia: personal.subgerencia.nombre,
+    };
   }
 
   private async getOffenderById(

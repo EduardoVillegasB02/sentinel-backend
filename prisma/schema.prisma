@@ -7,28 +7,16 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-enum Regime {
-  cas_276
-  cas_728
-  cas_1057
-  locador
-}
-
 enum Rol {
   administrator
   supervisor
   sentinel
 }
 
-enum Shift {
-  morning
-  afternoon
-  nigth
-}
-
 model Bodycam {
   id                    String                @id @default(uuid())
   name                  String
+  serie                 String
   reports               Report[]
   created_at            DateTime              @default(now())
   updated_at            DateTime              @updatedAt
@@ -86,8 +74,8 @@ model Offender {
   gestionate_id         Int
   subgerencia           String
   job                   String
-  regime                Regime
-  shift                 Shift
+  regime                String
+  shift                 String
   reports               Report[]
   created_at            DateTime              @default(now())
   updated_at            DateTime              @updatedAt
@@ -102,6 +90,7 @@ model Report {
   longitude             Float
   cam_user              String
   path                  String
+  date                  DateTime
   bodycam               Bodycam               @relation(fields: [bodycam_id], references: [id])
   bodycam_id            String
   lack                  Lack                  @relation(fields: [lack_id], references: [id])

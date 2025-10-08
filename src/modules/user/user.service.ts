@@ -51,7 +51,7 @@ export class UserService {
     );
   }
 
-  async findOne(id: string, rol: Rol): Promise<User> {
+  async findOne(id: string, rol?: Rol): Promise<User> {
     return await this.getUserById(id, false, rol);
   }
 

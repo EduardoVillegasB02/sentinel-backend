@@ -7,7 +7,7 @@ import {
   Matches,
 } from 'class-validator';
 
-export class CreateReportDto {
+export class CreateMessageDto {
   @IsString()
   @IsNotEmpty()
   address: string;

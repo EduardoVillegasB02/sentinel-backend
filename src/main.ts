@@ -2,6 +2,8 @@ import { NestFactory } from '@nestjs/core';
 import { Logger, ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { AppModule } from './app.module';
+import * as express from 'express';
+import { join } from 'path';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, {
@@ -19,6 +21,7 @@ async function bootstrap() {
       transform: true,
     }),
   );
+  app.use('/static', express.static(join(process.cwd(), 'client')));
   const config = app.get(ConfigService);
   const port = config.get<number>('PORT') || 3000;
   await app.listen(port ?? 3000);

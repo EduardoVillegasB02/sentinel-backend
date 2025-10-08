@@ -15,16 +15,17 @@ export class ExternalService {
       const key = this.config.get<string>('EXTERNAL_KEY');
       const route = this.config.get<string>('EXTERNAL_ROUTE');
       if (!key || !route)
-        throw new InternalServerErrorException('Varibles internas no definidas');
+        throw new InternalServerErrorException(
+          'Varibles internas no definidas',
+        );
       const { data } = await firstValueFrom(
         this.http.get(`${route}/${dni}`, {
           headers: {
             'x-api-key': key,
-          }
+          },
         }),
       );
-      console.log(data);
-      return data;
+      return data.data;
     } catch (error) {
       throw error;
     }

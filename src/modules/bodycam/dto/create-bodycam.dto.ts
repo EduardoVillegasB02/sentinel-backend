@@ -4,4 +4,8 @@ export class CreateBodycamDto {
   @IsString()
   @IsNotEmpty()
   name: string;
+
+  @IsString()
+  @IsNotEmpty()
+  serie: string;
 }

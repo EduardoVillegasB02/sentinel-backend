@@ -5,5 +5,6 @@ import { LackController } from './lack.controller';
 @Module({
   controllers: [LackController],
   providers: [LackService],
+  exports: [LackService],
 })
 export class LackModule {}
