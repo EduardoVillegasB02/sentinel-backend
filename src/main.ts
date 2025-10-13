@@ -1,9 +1,12 @@
-import { NestFactory } from '@nestjs/core';
+import { HttpAdapterHost, NestFactory, Reflector } from '@nestjs/core';
 import { Logger, ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { AppModule } from './app.module';
-import * as express from 'express';
-import { join } from 'path';
+import { AllExceptionsFilter } from './common/filters';
+import {
+  PrismaExceptionInterceptor,
+  ResponseInterceptor,
+} from './common/interceptors';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, {
@@ -14,6 +17,13 @@ async function bootstrap() {
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
     credentials: true,
   });
+  const reflector = app.get(Reflector);
+  app.useGlobalInterceptors(
+    new PrismaExceptionInterceptor(),
+    new ResponseInterceptor(reflector),
+  );
+  const httpAdapterHost = app.get(HttpAdapterHost);
+  app.useGlobalFilters(new AllExceptionsFilter(httpAdapterHost));
   app.setGlobalPrefix('api');
   app.useGlobalPipes(
     new ValidationPipe({
@@ -21,7 +31,6 @@ async function bootstrap() {
       transform: true,
     }),
   );
-  app.use('/static', express.static(join(process.cwd(), 'client')));
   const config = app.get(ConfigService);
   const port = config.get<number>('PORT') || 3000;
   await app.listen(port ?? 3000);

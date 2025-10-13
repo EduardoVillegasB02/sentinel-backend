@@ -1,8 +1,7 @@
-import { Position } from '@prisma/client';
 import {
-  IsEnum,
   IsNotEmpty,
   IsString,
+  IsUUID,
   MaxLength,
   MinLength,
 } from 'class-validator';
@@ -20,10 +19,7 @@ export class CreateLeadDto {
   @MaxLength(25)
   lastname: string;
 
-  @IsString()
+  @IsUUID()
   @IsNotEmpty()
-  job: string;
-
-  @IsEnum(Position)
-  position: Position;
+  job_id: string;
 }

@@ -7,7 +7,7 @@ import { paginationHelper } from '../../common/helpers';
 
 @Injectable()
 export class SubjectService {
-  constructor(private prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService) {}
 
   async create(dto: CreateSubjectDto): Promise<Subject> {
     const subject = await this.prisma.subject.create({ data: dto });
@@ -24,7 +24,7 @@ export class SubjectService {
         select: {
           id: true,
           name: true,
-          description: true,
+          lacks: true,
         },
         where,
         orderBy: { name: 'asc' },
@@ -46,30 +46,25 @@ export class SubjectService {
     return await this.getSubjectById(id);
   }
 
-  async delete(id: string): Promise<Subject> {
+  async delete(id: string): Promise<any> {
     await this.getSubjectById(id);
     await this.prisma.subject.update({
       data: { deleted_at: new Date() },
       where: { id },
     });
-    return await this.getSubjectById(id, true);
   }
 
-  private async getSubjectById(
-    id: string,
-    isDeleted: boolean = false,
-  ): Promise<any> {
+  private async getSubjectById(id: string): Promise<any> {
     const subject = await this.prisma.subject.findUnique({
       where: { id },
       select: {
         id: true,
         name: true,
-        description: true,
         lacks: true,
+        content: true,
         deleted_at: true,
       },
     });
-    if (isDeleted) return subject;
     if (!subject) throw new BadRequestException('Asunto no encontrado');
     if (subject.deleted_at) throw new BadRequestException('Asunto eliminado');
     return subject;

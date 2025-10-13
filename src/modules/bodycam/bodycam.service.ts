@@ -8,7 +8,7 @@ import { paginationHelper } from '../../common/helpers';
 
 @Injectable()
 export class BodycamService {
-  constructor(private prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService) {}
 
   async create(dto: CreateBodycamDto): Promise<Bodycam> {
     const bodycam = await this.prisma.bodycam.create({ data: dto });
@@ -46,13 +46,12 @@ export class BodycamService {
     return await this.getBodycamById(id);
   }
 
-  async delete(id: string): Promise<Bodycam> {
+  async delete(id: string): Promise<any> {
     await this.getBodycamById(id);
     await this.prisma.bodycam.update({
       data: { deleted_at: new Date() },
       where: { id },
     });
-    return await this.getBodycamById(id, true);
   }
 
   async bulkUpload(file: Express.Multer.File) {
@@ -73,10 +72,7 @@ export class BodycamService {
     };
   }
 
-  private async getBodycamById(
-    id: string,
-    isDeleted: boolean = false,
-  ): Promise<any> {
+  private async getBodycamById(id: string): Promise<any> {
     const bodycam = await this.prisma.bodycam.findUnique({
       where: { id },
       select: {
@@ -85,7 +81,6 @@ export class BodycamService {
         deleted_at: true,
       },
     });
-    if (isDeleted) return bodycam;
     if (!bodycam) throw new BadRequestException('Bodycam no encontrada');
     if (bodycam.deleted_at) throw new BadRequestException('Bodycam eliminada');
     return bodycam;

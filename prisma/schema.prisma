@@ -7,11 +7,6 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-enum Position {
-  cc
-  to
-}
-
 enum Rol {
   administrator
   supervisor
@@ -39,6 +34,15 @@ model Evidence {
   deleted_at            DateTime?
 }
 
+model Job {
+  id                    String                @id @default(uuid())
+  name                  String                @unique()
+  leads                 Lead[]
+  created_at            DateTime              @default(now())
+  updated_at            DateTime              @updatedAt
+  deleted_at            DateTime?
+}
+
 model Lack {
   id                    String                @id @default(uuid())
   name                  String
@@ -54,8 +58,8 @@ model Lead {
   id                    String                @id @default(uuid())
   name                  String
   lastname              String
-  job                   String
-  position              Position
+  job                   Job                   @relation(fields: [job_id], references: [id])
+  job_id                String
   created_at            DateTime              @default(now())
   updated_at            DateTime              @updatedAt
   deleted_at            DateTime?
@@ -79,13 +83,13 @@ model Offender {
 
 model Report {
   id                    String                @id @default(uuid())
-  message               String?
   address               String
+  date                  DateTime
+  bodycam_user          String
+  header                Json
   latitude              Float
   longitude             Float
-  cam_user              String?
-  path                  String?
-  date                  DateTime
+  message               String?
   bodycam               Bodycam               @relation(fields: [bodycam_id], references: [id])
   bodycam_id            String
   lack                  Lack?                 @relation(fields: [lack_id], references: [id])
@@ -104,8 +108,8 @@ model Report {
 model Subject {
   id                    String                @id @default(uuid())
   name                  String
-  description           String
   lacks                 Boolean               @default(false)
+  content               String
   reports               Report[]
   created_at            DateTime              @default(now())
   updated_at            DateTime              @updatedAt
