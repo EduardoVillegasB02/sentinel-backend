@@ -20,12 +20,6 @@ import { SearchDto } from '../../common/dto';
 export class OffenderController {
   constructor(private readonly offenderService: OffenderService) {}
 
-  @Roles('administrator')
-  @Post()
-  create(@Body() dto: CreateOffenderDto) {
-    return this.offenderService.create(dto);
-  }
-
   @Get()
   findAll(@Query() dto: SearchDto) {
     return this.offenderService.findAll(dto);

@@ -3,14 +3,20 @@ import { Lead } from '@prisma/client';
 import { CreateLeadDto, UpdateLeadDto } from './dto';
 import { PrismaService } from '../../prisma/prisma.service';
 import { SearchDto } from '../../common/dto';
-import { paginationHelper } from '../../common/helpers';
+import { paginationHelper, timezoneHelper } from '../../common/helpers';
 
 @Injectable()
 export class LeadService {
   constructor(private prisma: PrismaService) {}
 
   async create(dto: CreateLeadDto): Promise<Lead> {
-    const lead = await this.prisma.lead.create({ data: dto });
+    const lead = await this.prisma.lead.create({
+      data: {
+        ...dto,
+        created_at: timezoneHelper(),
+        updated_at: timezoneHelper(),
+      },
+    });
     return this.getLeadById(lead.id);
   }
 
@@ -24,12 +30,9 @@ export class LeadService {
         select: {
           id: true,
           name: true,
-          job: {
-            select: {
-              id: true,
-              name: true,
-            },
-          },
+          lastname: true,
+          job: true,
+          position: true,
         },
         where,
         orderBy: { name: 'asc' },
@@ -45,7 +48,10 @@ export class LeadService {
   async update(id: string, dto: UpdateLeadDto): Promise<Lead> {
     await this.getLeadById(id);
     await this.prisma.lead.update({
-      data: dto,
+      data: {
+        ...dto,
+        updated_at: timezoneHelper(),
+      },
       where: { id },
     });
     return await this.getLeadById(id);
@@ -54,7 +60,10 @@ export class LeadService {
   async delete(id: string): Promise<Lead> {
     await this.getLeadById(id);
     await this.prisma.lead.update({
-      data: { deleted_at: new Date() },
+      data: {
+        updated_at: timezoneHelper(),
+        deleted_at: timezoneHelper(),
+      },
       where: { id },
     });
     return this.getLeadById(id, true);
@@ -70,12 +79,8 @@ export class LeadService {
         id: true,
         name: true,
         lastname: true,
-        job: {
-          select: {
-            id: true,
-            name: true,
-          },
-        },
+        job: true,
+        position: true,
         deleted_at: true,
       },
     });

@@ -4,6 +4,7 @@ import { ReportController } from './report.controller';
 import { PrismaService } from '../../prisma/prisma.service';
 import { BodycamModule } from '../bodycam/bodycam.module';
 import { LackModule } from '../lack/lack.module';
+import { LeadModule } from '../lead/lead.module';
 import { OffenderModule } from '../offender/offender.module';
 import { SubjectModule } from '../subject/subject.module';
 import { UserModule } from '../user/user.module';
@@ -12,6 +13,7 @@ import { UserModule } from '../user/user.module';
   imports: [
     BodycamModule,
     LackModule,
+    LeadModule,
     OffenderModule,
     SubjectModule,
     UserModule,

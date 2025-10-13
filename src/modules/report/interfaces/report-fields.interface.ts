@@ -1,7 +1,7 @@
 import { Lack, User } from '@prisma/client';
 
 interface Offender {
-  id: number;
+  gestionate_id: number;
   name: string;
   lastname: string;
   job: string;

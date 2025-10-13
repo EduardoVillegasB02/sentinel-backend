@@ -7,6 +7,11 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum Position {
+  cc
+  to
+}
+
 enum Rol {
   administrator
   supervisor
@@ -34,16 +39,6 @@ model Evidence {
   deleted_at            DateTime?
 }
 
-model Job {
-  id                    String                @id @default(uuid())
-  name                  String
-  description           String?
-  leads                 Lead[]
-  created_at            DateTime              @default(now())
-  updated_at            DateTime              @updatedAt
-  deleted_at            DateTime?
-}
-
 model Lack {
   id                    String                @id @default(uuid())
   name                  String
@@ -59,8 +54,8 @@ model Lead {
   id                    String                @id @default(uuid())
   name                  String
   lastname              String
-  job                   Job                   @relation(fields: [job_id], references: [id])
-  job_id                String
+  job                   String
+  position              Position
   created_at            DateTime              @default(now())
   updated_at            DateTime              @updatedAt
   deleted_at            DateTime?
@@ -70,7 +65,7 @@ model Offender {
   id                    String                @id @default(uuid())
   name                  String
   lastname              String
-  dni                   String
+  dni                   String                @unique()
   gestionate_id         Int
   subgerencia           String
   job                   String
@@ -84,17 +79,17 @@ model Offender {
 
 model Report {
   id                    String                @id @default(uuid())
-  message               String
+  message               String?
   address               String
   latitude              Float
   longitude             Float
-  cam_user              String
-  path                  String
+  cam_user              String?
+  path                  String?
   date                  DateTime
   bodycam               Bodycam               @relation(fields: [bodycam_id], references: [id])
   bodycam_id            String
-  lack                  Lack                  @relation(fields: [lack_id], references: [id])
-  lack_id               String
+  lack                  Lack?                 @relation(fields: [lack_id], references: [id])
+  lack_id               String?
   offender              Offender              @relation(fields: [offender_id], references: [id])
   offender_id           String
   subject               Subject               @relation(fields: [subject_id], references: [id])
@@ -110,6 +105,7 @@ model Subject {
   id                    String                @id @default(uuid())
   name                  String
   description           String
+  lacks                 Boolean               @default(false)
   reports               Report[]
   created_at            DateTime              @default(now())
   updated_at            DateTime              @updatedAt

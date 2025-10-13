@@ -65,6 +65,7 @@ export class SubjectService {
         id: true,
         name: true,
         description: true,
+        lacks: true,
         deleted_at: true,
       },
     });

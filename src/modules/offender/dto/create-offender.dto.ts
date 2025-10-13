@@ -1,24 +1,42 @@
 import {
+  IsBoolean,
   IsInt,
   IsNotEmpty,
   IsString,
-  MaxLength,
-  MinLength,
+  Matches,
 } from 'class-validator';
 
 export class CreateOffenderDto {
   @IsString()
   @IsNotEmpty()
-  @MinLength(3)
-  @MaxLength(25)
   name: string;
 
   @IsString()
   @IsNotEmpty()
-  @MinLength(3)
-  @MaxLength(25)
   lastname: string;
+
+  @Matches(/^[0-9]{8}$/)
+  dni: string;
 
   @IsInt()
   gestionate_id: number;
+
+  @IsBoolean()
+  verified?: boolean = false;
+
+  @IsString()
+  @IsNotEmpty()
+  job: string;
+
+  @IsString()
+  @IsNotEmpty()
+  shift: string;
+
+  @IsString()
+  @IsNotEmpty()
+  regime: string;
+
+  @IsString()
+  @IsNotEmpty()
+  subgerencia: string;
 }

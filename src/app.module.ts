@@ -6,7 +6,6 @@ import { PrismaModule } from './prisma/prisma.module';
 import { AuthModule } from './auth/auth.module';
 import { BodycamModule } from './modules/bodycam/bodycam.module';
 import { EvidenceModule } from './modules/evidence/evidence.module';
-import { JobModule } from './modules/job/job.module';
 import { LackModule } from './modules/lack/lack.module';
 import { LeadModule } from './modules/lead/lead.module';
 import { OffenderModule } from './modules/offender/offender.module';
@@ -26,7 +25,6 @@ import { ExternalModule } from './external/external.module';
     AuthModule,
     BodycamModule,
     EvidenceModule,
-    JobModule,
     LackModule,
     LeadModule,
     OffenderModule,
