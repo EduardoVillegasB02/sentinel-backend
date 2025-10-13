@@ -8,7 +8,7 @@ import { SearchDto } from '../../common/dto';
 
 @Injectable()
 export class UserService {
-  constructor(private prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService) {}
 
   async create(dto: CreateUserDto, rol: Rol): Promise<User> {
     const { password, ...res } = dto;
@@ -52,7 +52,7 @@ export class UserService {
   }
 
   async findOne(id: string, rol?: Rol): Promise<User> {
-    return await this.getUserById(id, false, rol);
+    return await this.getUserById(id, rol);
   }
 
   async update(id: string, dto: UpdateUserDto): Promise<User> {
@@ -72,7 +72,7 @@ export class UserService {
     return await this.getUserById(id);
   }
 
-  async delete(id: string): Promise<User> {
+  async delete(id: string): Promise<any> {
     await this.getUserById(id);
     await this.prisma.user.update({
       data: {
@@ -81,14 +81,9 @@ export class UserService {
       },
       where: { id },
     });
-    return await this.getUserById(id, true);
   }
 
-  private async getUserById(
-    id: string,
-    isDeleted: boolean = false,
-    rol: Rol | null = null,
-  ): Promise<any> {
+  private async getUserById(id: string, rol: Rol | null = null): Promise<any> {
     const where = rol ? { id, rol } : { id };
     const user = await this.prisma.user.findUnique({
       where,
@@ -102,7 +97,6 @@ export class UserService {
         deleted_at: true,
       },
     });
-    if (isDeleted) return user;
     if (!user) throw new BadRequestException('Usuario no encontrado');
     if (user.deleted_at) throw new BadRequestException('Usuario eliminado');
     return user;

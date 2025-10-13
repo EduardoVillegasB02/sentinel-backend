@@ -1,15 +1,19 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { Lead } from '@prisma/client';
-import { CreateLeadDto, UpdateLeadDto } from './dto';
+import { CreateLeadDto, FilterLeadDto, UpdateLeadDto } from './dto';
 import { PrismaService } from '../../prisma/prisma.service';
-import { SearchDto } from '../../common/dto';
 import { paginationHelper, timezoneHelper } from '../../common/helpers';
+import { JobService } from '../job/job.service';
 
 @Injectable()
 export class LeadService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly jobService: JobService,
+  ) {}
 
   async create(dto: CreateLeadDto): Promise<Lead> {
+    await this.jobService.findOne(dto.job_id);
     const lead = await this.prisma.lead.create({
       data: {
         ...dto,
@@ -20,10 +24,15 @@ export class LeadService {
     return this.getLeadById(lead.id);
   }
 
-  async findAll(dto: SearchDto): Promise<any> {
-    const { search, ...pagination } = dto;
+  async findAll(dto: FilterLeadDto): Promise<any> {
+    const { job, search, ...pagination } = dto;
     const where: any = { deleted_at: null };
-    if (search) where.name = { contains: search, mode: 'insensitive' };
+    if (search)
+      where.OR = [
+        { name: { contains: search, mode: 'insensitive' } },
+        { lastname: { contains: search, mode: 'insensitive' } },
+      ];
+    if (job) where.job_id = job;
     return await paginationHelper(
       this.prisma.lead,
       {
@@ -31,8 +40,9 @@ export class LeadService {
           id: true,
           name: true,
           lastname: true,
-          job: true,
-          position: true,
+          job: {
+            select: { id: true, name: true },
+          },
         },
         where,
         orderBy: { name: 'asc' },
@@ -46,6 +56,7 @@ export class LeadService {
   }
 
   async update(id: string, dto: UpdateLeadDto): Promise<Lead> {
+    if (dto.job_id) await this.jobService.findOne(dto.job_id);
     await this.getLeadById(id);
     await this.prisma.lead.update({
       data: {
@@ -57,7 +68,7 @@ export class LeadService {
     return await this.getLeadById(id);
   }
 
-  async delete(id: string): Promise<Lead> {
+  async delete(id: string): Promise<any> {
     await this.getLeadById(id);
     await this.prisma.lead.update({
       data: {
@@ -66,25 +77,21 @@ export class LeadService {
       },
       where: { id },
     });
-    return this.getLeadById(id, true);
   }
 
-  private async getLeadById(
-    id: string,
-    isDeleted: boolean = false,
-  ): Promise<any> {
+  private async getLeadById(id: string): Promise<any> {
     const lead = await this.prisma.lead.findUnique({
       where: { id },
       select: {
         id: true,
         name: true,
         lastname: true,
-        job: true,
-        position: true,
+        job: {
+          select: { id: true, name: true },
+        },
         deleted_at: true,
       },
     });
-    if (isDeleted) return lead;
     if (!lead) throw new BadRequestException('Jefe no encontrado');
     if (lead.deleted_at) throw new BadRequestException('Jefe eliminado');
     return lead;

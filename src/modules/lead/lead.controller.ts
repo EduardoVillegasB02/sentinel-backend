@@ -11,9 +11,8 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { LeadService } from './lead.service';
-import { CreateLeadDto, UpdateLeadDto } from './dto';
+import { CreateLeadDto, FilterLeadDto, UpdateLeadDto } from './dto';
 import { JwtAuthGuard, Roles, RolesGuard } from '../../auth/guard';
-import { SearchDto } from '../../common/dto';
 
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('lead')
@@ -27,7 +26,7 @@ export class LeadController {
   }
 
   @Get()
-  findAll(@Query() dto: SearchDto) {
+  findAll(@Query() dto: FilterLeadDto) {
     return this.leadService.findAll(dto);
   }
 

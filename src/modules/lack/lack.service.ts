@@ -7,7 +7,7 @@ import { paginationHelper } from '../../common/helpers';
 
 @Injectable()
 export class LackService {
-  constructor(private prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService) {}
 
   async create(dto: CreateLackDto): Promise<Lack> {
     const lack = await this.prisma.lack.create({ data: dto });
@@ -47,19 +47,15 @@ export class LackService {
     return await this.getLackById(id);
   }
 
-  async delete(id: string): Promise<Lack> {
+  async delete(id: string): Promise<any> {
     await this.getLackById(id);
     await this.prisma.lack.update({
       data: { deleted_at: new Date() },
       where: { id },
     });
-    return await this.getLackById(id, true);
   }
 
-  private async getLackById(
-    id: string,
-    isDeleted: boolean = false,
-  ): Promise<any> {
+  private async getLackById(id: string): Promise<any> {
     const lack = await this.prisma.lack.findUnique({
       where: { id },
       select: {
@@ -70,7 +66,6 @@ export class LackService {
         deleted_at: true,
       },
     });
-    if (isDeleted) return lack;
     if (!lack)
       throw new BadRequestException('Falta disciplinaria no encontrada');
     if (lack.deleted_at)

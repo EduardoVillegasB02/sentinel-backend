@@ -15,7 +15,7 @@ export interface ReportFields {
   bodycam: string;
   date: string;
   time: string;
-  lack: Lack;
+  lack?: Lack | null;
   holder: string;
   offender: Offender;
   user: User;

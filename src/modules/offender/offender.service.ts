@@ -9,8 +9,8 @@ import { paginationHelper, timezoneHelper } from '../../common/helpers';
 @Injectable()
 export class OffenderService {
   constructor(
-    private external: ExternalService,
-    private prisma: PrismaService,
+    private readonly external: ExternalService,
+    private readonly prisma: PrismaService,
   ) {}
 
   async create(dni: string, verified?: boolean): Promise<any> {
@@ -37,6 +37,12 @@ export class OffenderService {
         select: {
           id: true,
           name: true,
+          lastname: true,
+          dni: true,
+          job: true,
+          regime: true,
+          shift: true,
+          subgerencia: true,
         },
         where,
         orderBy: { name: 'asc' },
@@ -61,7 +67,7 @@ export class OffenderService {
     return await this.getOffenderById(id);
   }
 
-  async delete(id: string): Promise<Offender> {
+  async delete(id: string): Promise<any> {
     await this.getOffenderById(id);
     await this.prisma.offender.update({
       data: {
@@ -70,21 +76,22 @@ export class OffenderService {
       },
       where: { id },
     });
-    return await this.getOffenderById(id, true);
   }
 
-  private async getOffenderById(
-    id: string,
-    isDeleted: boolean = false,
-  ): Promise<any> {
+  private async getOffenderById(id: string): Promise<any> {
     const offender = await this.prisma.offender.findUnique({
       where: { id },
       select: {
         name: true,
+        lastname: true,
+        dni: true,
+        job: true,
+        regime: true,
+        shift: true,
+        subgerencia: true,
         deleted_at: true,
       },
     });
-    if (isDeleted) return offender;
     if (!offender) throw new BadRequestException('Infractor no encontrada');
     if (offender.deleted_at)
       throw new BadRequestException('Infractor eliminada');
@@ -106,7 +113,7 @@ export class OffenderService {
     return offender.id;
   }
 
-  private async verifyPersonal(dni: string) {
+  async verifyPersonal(dni: string) {
     const personal = await this.external.getExternalUser(dni);
     if (!personal)
       throw new BadRequestException(
