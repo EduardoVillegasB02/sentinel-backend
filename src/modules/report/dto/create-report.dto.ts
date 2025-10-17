@@ -63,6 +63,7 @@ export class CreateReportDto {
   offender_dni: string;
 
   @IsUUID()
+  @IsNotEmpty()
   bodycam_id: string;
 
   @IsOptional()
@@ -70,5 +71,6 @@ export class CreateReportDto {
   lack_id?: string;
 
   @IsUUID()
+  @IsNotEmpty()
   subject_id: string;
 }

@@ -106,11 +106,11 @@ export class OffenderService {
       where: { dni },
     });
     if (!offender) return null;
-    if (!verified)
+    /* if (!verified)
       throw new BadRequestException(
         'El personal seleccionado ya cuenta con un informe',
-      );
-    return offender.id;
+      ); */
+    return offender;
   }
 
   async verifyPersonal(dni: string) {

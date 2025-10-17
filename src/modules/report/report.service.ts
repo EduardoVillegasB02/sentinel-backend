@@ -1,7 +1,7 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { instanceToPlain } from 'class-transformer';
 import * as handlebars from 'handlebars';
-import { CreateReportDto } from './dto';
+import { CreateReportDto, UpdateReportDto } from './dto';
 import { PrismaService } from '../../prisma/prisma.service';
 import { BodycamService } from '../bodycam/bodycam.service';
 import { LackService } from '../lack/lack.service';
@@ -9,7 +9,9 @@ import { OffenderService } from '../offender/offender.service';
 import { SubjectService } from '../subject/subject.service';
 import { UserService } from '../user/user.service';
 import { dateString } from './helpers';
-import { timezoneHelper } from '../../common/helpers';
+import { paginationHelper, timezoneHelper } from '../../common/helpers';
+import { SearchDto } from '../../common/dto';
+import { Report } from '@prisma/client';
 
 @Injectable()
 export class ReportService {
@@ -64,8 +66,110 @@ export class ReportService {
         updated_at: timezoneHelper(),
       },
     });
-    return {
-      message,
-    };
+    return { message };
+  }
+
+  async findAll(dto: SearchDto): Promise<any> {
+    const { search, ...pagination } = dto;
+    const where: any = { deleted_at: null };
+    if (search) where.bodycam_user = { contains: search, mode: 'insensitive' };
+    return await paginationHelper(
+      this.prisma.report,
+      {
+        select: {
+          id: true,
+          address: true,
+          date: true,
+          bodycam_user: true,
+          header: true,
+          latitude: true,
+          longitude: true,
+          message: true,
+          bodycam: true,
+          lack: true,
+          offender: true,
+          subject: {
+            select: { id: true, name: true },
+          },
+          user: {
+            select: {
+              id: true,
+              username: true,
+              name: true,
+              lastname: true,
+              email: true,
+              dni: true,
+              phone: true,
+            },
+          },
+        },
+        where,
+        orderBy: { crested_at: 'desc' },
+      },
+      pagination,
+    );
+  }
+
+  async findOne(id: string): Promise<Report> {
+    return await this.getReportById(id);
+  }
+
+  async update(id: string, dto: UpdateReportDto): Promise<Report> {
+    await this.getReportById(id);
+    if (dto.bodycam_id) await this.bodycamService.findOne(dto.bodycam_id);
+    if (dto.subject_id) await this.subjectSubject.findOne(dto.subject_id);
+    const { header, bodycam_dni, offender_dni, ...res } = dto;
+    await this.prisma.report.update({
+      data: res,
+      where: { id },
+    });
+    return await this.getReportById(id);
+  }
+
+  async delete(id: string): Promise<any> {
+    await this.getReportById(id);
+    await this.prisma.report.update({
+      data: { deleted_at: new Date() },
+      where: { id },
+    });
+  }
+
+  private async getReportById(id: string): Promise<any> {
+    const report = await this.prisma.report.findUnique({
+      where: { id },
+      select: {
+          id: true,
+          address: true,
+          date: true,
+          bodycam_user: true,
+          header: true,
+          latitude: true,
+          longitude: true,
+          message: true,
+          bodycam: true,
+          lack: true,
+          offender: true,
+          subject: {
+            select: { id: true, name: true },
+          },
+          user: {
+            select: {
+              id: true,
+              username: true,
+              name: true,
+              lastname: true,
+              email: true,
+              dni: true,
+              phone: true,
+            },
+          },
+          deleted_at: true,
+        },
+    });
+    if (!report)
+      throw new BadRequestException('Informe no encontrado');
+    if (report.deleted_at)
+      throw new BadRequestException('Informe eliminado');
+    return report;
   }
 }
