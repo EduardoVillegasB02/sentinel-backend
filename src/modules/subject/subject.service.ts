@@ -3,14 +3,20 @@ import { Subject } from '@prisma/client';
 import { CreateSubjectDto, UpdateSubjectDto } from './dto';
 import { PrismaService } from '../../prisma/prisma.service';
 import { SearchDto } from '../../common/dto';
-import { paginationHelper } from '../../common/helpers';
+import { paginationHelper, timezoneHelper } from '../../common/helpers';
 
 @Injectable()
 export class SubjectService {
   constructor(private readonly prisma: PrismaService) {}
 
   async create(dto: CreateSubjectDto): Promise<Subject> {
-    const subject = await this.prisma.subject.create({ data: dto });
+    const subject = await this.prisma.subject.create({
+      data: {
+        ...dto,
+        created_at: timezoneHelper(),
+        updated_at: timezoneHelper(),
+      },
+    });
     return this.getSubjectById(subject.id);
   }
 
@@ -40,7 +46,10 @@ export class SubjectService {
   async update(id: string, dto: UpdateSubjectDto): Promise<Subject> {
     await this.getSubjectById(id);
     await this.prisma.subject.update({
-      data: dto,
+      data: {
+        ...dto,
+        updated_at: timezoneHelper(),
+      },
       where: { id },
     });
     return await this.getSubjectById(id);
@@ -49,7 +58,10 @@ export class SubjectService {
   async delete(id: string): Promise<any> {
     await this.getSubjectById(id);
     await this.prisma.subject.update({
-      data: { deleted_at: new Date() },
+      data: {
+        updated_at: timezoneHelper(),
+        deleted_at: timezoneHelper(),
+      },
       where: { id },
     });
   }

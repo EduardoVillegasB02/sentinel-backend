@@ -3,14 +3,20 @@ import { Lack } from '@prisma/client';
 import { CreateLackDto, UpdateLackDto } from './dto';
 import { PrismaService } from '../../prisma/prisma.service';
 import { SearchDto } from '../../common/dto';
-import { paginationHelper } from '../../common/helpers';
+import { paginationHelper, timezoneHelper } from '../../common/helpers';
 
 @Injectable()
 export class LackService {
   constructor(private readonly prisma: PrismaService) {}
 
   async create(dto: CreateLackDto): Promise<Lack> {
-    const lack = await this.prisma.lack.create({ data: dto });
+    const lack = await this.prisma.lack.create({
+      data: {
+        ...dto,
+        created_at: timezoneHelper(),
+        updated_at: timezoneHelper(),
+      },
+    });
     return this.getLackById(lack.id);
   }
 
@@ -41,7 +47,10 @@ export class LackService {
   async update(id: string, dto: UpdateLackDto): Promise<Lack> {
     await this.getLackById(id);
     await this.prisma.lack.update({
-      data: dto,
+      data: {
+        ...dto,
+        updated_at: timezoneHelper(),
+      },
       where: { id },
     });
     return await this.getLackById(id);
@@ -49,8 +58,11 @@ export class LackService {
 
   async delete(id: string): Promise<any> {
     await this.getLackById(id);
-    await this.prisma.lack.update({
-      data: { deleted_at: new Date() },
+    await this.prisma.lead.update({
+      data: {
+        updated_at: timezoneHelper(),
+        deleted_at: timezoneHelper(),
+      },
       where: { id },
     });
   }

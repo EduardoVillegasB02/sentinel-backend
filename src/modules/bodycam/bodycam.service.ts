@@ -4,14 +4,20 @@ import * as xlsx from 'xlsx';
 import { CreateBodycamDto, UpdateBodycamDto } from './dto';
 import { PrismaService } from '../../prisma/prisma.service';
 import { SearchDto } from '../../common/dto';
-import { paginationHelper } from '../../common/helpers';
+import { paginationHelper, timezoneHelper } from '../../common/helpers';
 
 @Injectable()
 export class BodycamService {
   constructor(private readonly prisma: PrismaService) {}
 
   async create(dto: CreateBodycamDto): Promise<Bodycam> {
-    const bodycam = await this.prisma.bodycam.create({ data: dto });
+    const bodycam = await this.prisma.bodycam.create({
+      data: {
+        ...dto,
+        created_at: timezoneHelper(),
+        updated_at: timezoneHelper(),
+      },
+    });
     return this.getBodycamById(bodycam.id);
   }
 
@@ -40,7 +46,10 @@ export class BodycamService {
   async update(id: string, dto: UpdateBodycamDto): Promise<Bodycam> {
     await this.getBodycamById(id);
     await this.prisma.bodycam.update({
-      data: dto,
+      data: {
+        ...dto,
+        updated_at: timezoneHelper(),
+      },
       where: { id },
     });
     return await this.getBodycamById(id);
@@ -49,7 +58,10 @@ export class BodycamService {
   async delete(id: string): Promise<any> {
     await this.getBodycamById(id);
     await this.prisma.bodycam.update({
-      data: { deleted_at: new Date() },
+      data: {
+        updated_at: timezoneHelper(),
+        deleted_at: timezoneHelper(),
+      },
       where: { id },
     });
   }
