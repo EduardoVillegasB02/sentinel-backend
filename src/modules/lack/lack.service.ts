@@ -29,9 +29,11 @@ export class LackService {
       {
         select: {
           id: true,
-          name: true,
           article: true,
+          content: true,
           description: true,
+          name: true,
+          subject: { select: { id: true, name: true } },
         },
         where,
         orderBy: { name: 'asc' },
@@ -72,9 +74,11 @@ export class LackService {
       where: { id },
       select: {
         id: true,
-        name: true,
         article: true,
+        content: true,
         description: true,
+        name: true,
+        subject: { select: { id: true, name: true } },
         deleted_at: true,
       },
     });

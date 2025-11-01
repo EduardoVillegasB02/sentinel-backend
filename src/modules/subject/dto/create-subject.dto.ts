@@ -4,8 +4,4 @@ export class CreateSubjectDto {
   @IsString()
   @IsNotEmpty()
   name: string;
-
-  @IsString()
-  @IsNotEmpty()
-  content: string;
 }

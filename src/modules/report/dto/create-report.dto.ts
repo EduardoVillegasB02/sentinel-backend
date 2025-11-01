@@ -70,8 +70,8 @@ export class CreateReportDto {
   bodycam_id: string;
 
   @IsOptional()
-  @IsUUID()
-  lack_id?: string;
+  @IsNotEmpty()
+  lack_id: string;
 
   @IsUUID()
   @IsNotEmpty()

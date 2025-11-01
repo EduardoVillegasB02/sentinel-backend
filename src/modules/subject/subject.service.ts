@@ -30,7 +30,7 @@ export class SubjectService {
         select: {
           id: true,
           name: true,
-          lacks: true,
+          lacks: { select: { id: true, name: true } },
         },
         where,
         orderBy: { name: 'asc' },
@@ -72,8 +72,7 @@ export class SubjectService {
       select: {
         id: true,
         name: true,
-        lacks: true,
-        content: true,
+        lacks: { select: { id: true, name: true } },
         deleted_at: true,
       },
     });

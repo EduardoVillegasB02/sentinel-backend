@@ -32,14 +32,8 @@ export class ReportService {
 
   async create(dto: CreateReportDto, req: any) {
     const bodycam = await this.bodycamService.findOne(dto.bodycam_id);
+    const lack = await this.lackService.findOne(dto.lack_id);
     const subject = await this.subjectSubject.findOne(dto.subject_id);
-    if (subject.lacks && !dto.lack_id)
-      throw new BadRequestException(
-        'Este asunto admite necesariamente una falta',
-      );
-    const lack = dto.lack_id
-      ? await this.lackService.findOne(dto.lack_id)
-      : null;
     const user = await this.userService.findOne(req.user_id);
     const offender = await this.offenderService.create(dto.offender_dni);
     const cameraman =
@@ -48,7 +42,7 @@ export class ReportService {
         : offender;
     const bodycam_user = `${cameraman.lastname} ${cameraman.name}`;
     const { date: dates, time } = dateString(new Date(dto.date));
-    const compile = handlebars.compile(subject.content);
+    const compile = handlebars.compile(lack.content);
     const message = compile({
       bodycam,
       bodycam_user,

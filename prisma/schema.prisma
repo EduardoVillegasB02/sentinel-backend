@@ -27,7 +27,7 @@ model Evidence {
   id                    String                @id @default(uuid())
   description           String
   path                  String
-  mimetype             String
+  mimetype              String
   size                  Int
   report                Report                @relation(fields: [report_id], references: [id])
   report_id             String
@@ -47,9 +47,12 @@ model Job {
 
 model Lack {
   id                    String                @id @default(uuid())
+  article               String?
+  content               String
+  description           String?
   name                  String
-  article               String
-  description           String
+  subject_id            String
+  subject               Subject               @relation(fields: [subject_id], references: [id])
   reports               Report[]
   created_at            DateTime              @default(now())
   updated_at            DateTime              @updatedAt
@@ -95,8 +98,8 @@ model Report {
   message               String?
   bodycam               Bodycam               @relation(fields: [bodycam_id], references: [id])
   bodycam_id            String
-  lack                  Lack?                 @relation(fields: [lack_id], references: [id])
-  lack_id               String?
+  lack                  Lack                  @relation(fields: [lack_id], references: [id])
+  lack_id               String
   offender              Offender              @relation(fields: [offender_id], references: [id])
   offender_id           String
   subject               Subject               @relation(fields: [subject_id], references: [id])
@@ -112,8 +115,7 @@ model Report {
 model Subject {
   id                    String                @id @default(uuid())
   name                  String
-  lacks                 Boolean               @default(false)
-  content               String
+  lacks                 Lack[]
   reports               Report[]
   created_at            DateTime              @default(now())
   updated_at            DateTime              @updatedAt
