@@ -29,12 +29,12 @@ export class EvidenceService {
       fs.writeFileSync(filePath, file.buffer);
       return {
         description: descriptions[i],
-        path: `evidences/${currentDate}/${uniqueName}`,
+        path: `evidence/${currentDate}/${uniqueName}`,
         mimetype: file.mimetype,
         size: file.size,
         report_id,
         created_at: date,
-        update_at: date,
+        updated_at: date,
       };
     });
     return await this.prisma.evidence.createMany({

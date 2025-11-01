@@ -88,6 +88,7 @@ model Report {
   address               String
   date                  DateTime
   bodycam_user          String
+  bodycam_supervisor    String
   header                Json
   latitude              Float
   longitude             Float

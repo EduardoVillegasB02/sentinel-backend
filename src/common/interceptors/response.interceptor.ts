@@ -13,18 +13,29 @@ export class ResponseInterceptor implements NestInterceptor {
   constructor(private readonly reflector: Reflector) {}
 
   intercept(ctx: ExecutionContext, next: CallHandler): Observable<any> {
-    const req = ctx.switchToHttp().getRequest();
-    const method: string = (req?.method || 'GET').toUpperCase();
+    const response = ctx.switchToHttp().getResponse();
+    const request = ctx.switchToHttp().getRequest();
+    const method = (request?.method || 'GET').toUpperCase();
+    if (response.headersSent || response.sendFile) return next.handle();
     const SUCCESS_MESSAGE_KEY = 'success_message';
     const customMessage = this.reflector.getAllAndOverride<string>(
       SUCCESS_MESSAGE_KEY,
       [ctx.getHandler(), ctx.getClass()],
     );
     return next.handle().pipe(
-      map((data) => ({
-        message: customMessage ?? this.resolveDefaultMessage(method, data),
-        data,
-      })),
+      map((data) => {
+        if (
+          data === undefined ||
+          data === null ||
+          data instanceof Buffer ||
+          typeof data === 'string'
+        )
+          return data;
+        return {
+          message: customMessage ?? this.resolveDefaultMessage(method, data),
+          data,
+        };
+      }),
     );
   }
 
@@ -38,7 +49,7 @@ export class ResponseInterceptor implements NestInterceptor {
       case 'DELETE':
         return 'Eliminación exitosa';
       default:
-        if (data.data) return 'Registros obtenidos exitosamente';
+        if (data && data.data) return 'Registros obtenidos exitosamente';
         return 'Registro obtenido exitosamente';
     }
   }

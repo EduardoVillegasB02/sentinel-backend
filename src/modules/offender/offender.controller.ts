@@ -25,6 +25,11 @@ export class OffenderController {
     return this.offenderService.findAll(dto);
   }
 
+  @Get('dni/:dni')
+  findDni(@Param('dni') dni: string) {
+    return this.offenderService.findDni(dni);
+  }
+
   @Get(':id')
   findOne(@Param('id', ParseUUIDPipe) id: string) {
     return this.offenderService.findOne(id);

@@ -59,6 +59,9 @@ export class CreateReportDto {
   @Matches(/^[0-9]{8}$/)
   bodycam_dni: string;
 
+  @IsString()
+  bodycam_supervisor: string;
+
   @Matches(/^[0-9]{8}$/)
   offender_dni: string;
 

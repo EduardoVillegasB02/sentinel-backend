@@ -78,6 +78,10 @@ export class OffenderService {
     });
   }
 
+  async findDni(dni: string): Promise<any> {
+    return await this.verifyPersonal(dni);
+  }
+
   private async getOffenderById(id: string): Promise<any> {
     const offender = await this.prisma.offender.findUnique({
       where: { id },

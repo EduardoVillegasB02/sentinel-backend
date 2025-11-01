@@ -33,6 +33,7 @@ export class AuthService {
     });
     return {
       user: username,
+      rol: user.rol,
       token,
     };
   }

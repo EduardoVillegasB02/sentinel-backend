@@ -20,7 +20,7 @@ export function generateDirectory(configService: ConfigService): any {
   const basePath = getBasePath(configService);
   const date = timezoneHelper();
   const currentDate = date.toISOString().split('T')[0];
-  const uploadDir = path.join(basePath, 'evidences', currentDate);
+  const uploadDir = path.join(basePath, 'evidence', currentDate);
   if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
   return { currentDate, uploadDir, date };
 }
@@ -33,7 +33,7 @@ export function getResolvedFilePath(
   const sanitizedPath = Array.isArray(dynamicPath)
     ? path.join(...dynamicPath)
     : dynamicPath.replace(/^\/+/, '');
-  const fullPath = path.resolve(basePath, sanitizedPath);
+  const fullPath = path.resolve(basePath, 'evidence', sanitizedPath);
   if (!fs.existsSync(fullPath))
     throw new NotFoundException(`Archivo no encontrado: ${sanitizedPath}`);
   return fullPath;

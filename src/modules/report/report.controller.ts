@@ -57,6 +57,7 @@ export class ReportController {
     @Body('descriptions') descriptions: string[] | string,
     @Body() dto: UpdateReportDto,
   ) {
+    if (typeof descriptions === 'string') descriptions = [descriptions];
     return this.reportService.update(id, dto, files, descriptions);
   }
 
