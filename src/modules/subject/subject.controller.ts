@@ -20,7 +20,7 @@ import { SearchDto } from '../../common/dto';
 export class SubjectController {
   constructor(private readonly subjectService: SubjectService) {}
 
-  @Roles('administrator', 'supervisor')
+  @Roles('ADMINISTRATOR', 'SUPERVISOR')
   @Post()
   create(@Body() dto: CreateSubjectDto) {
     return this.subjectService.create(dto);
@@ -36,7 +36,7 @@ export class SubjectController {
     return this.subjectService.findOne(id);
   }
 
-  @Roles('administrator', 'supervisor')
+  @Roles('ADMINISTRATOR', 'SUPERVISOR')
   @Patch(':id')
   update(
     @Param('id', ParseUUIDPipe) id: string,
@@ -45,7 +45,7 @@ export class SubjectController {
     return this.subjectService.update(id, dto);
   }
 
-  @Roles('administrator', 'supervisor')
+  @Roles('ADMINISTRATOR', 'SUPERVISOR')
   @Delete(':id')
   delete(@Param('id', ParseUUIDPipe) id: string) {
     return this.subjectService.delete(id);

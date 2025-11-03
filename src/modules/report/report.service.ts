@@ -1,9 +1,10 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
-import { Report } from '@prisma/client';
+import { Model, Report } from '@prisma/client';
 import { instanceToPlain } from 'class-transformer';
 import * as handlebars from 'handlebars';
 import { CreateReportDto, UpdateReportDto } from './dto';
 import { PrismaService } from '../../prisma/prisma.service';
+import { AuditService } from '../audit/audit.service';
 import { BodycamService } from '../bodycam/bodycam.service';
 import { EvidenceService } from '../evidence/evidence.service';
 import { LackService } from '../lack/lack.service';
@@ -22,6 +23,7 @@ import { SearchDto } from '../../common/dto';
 export class ReportService {
   constructor(
     private readonly prisma: PrismaService,
+    private readonly auditService: AuditService,
     private readonly bodycamService: BodycamService,
     private readonly evidenceService: EvidenceService,
     private readonly lackService: LackService,
@@ -31,10 +33,11 @@ export class ReportService {
   ) {}
 
   async create(dto: CreateReportDto, req: any) {
-    const bodycam = await this.bodycamService.findOne(dto.bodycam_id);
+    const { user_id } = req.user;
+    const bodycam = await this.bodycamService.getBodycamById(dto.bodycam_id);
     const lack = await this.lackService.findOne(dto.lack_id);
     const subject = await this.subjectSubject.findOne(dto.subject_id);
-    const user = await this.userService.findOne(req.user_id);
+    const user = await this.userService.findOne(user_id);
     const offender = await this.offenderService.create(dto.offender_dni);
     const cameraman =
       dto.bodycam_dni !== dto.offender_dni
@@ -67,14 +70,22 @@ export class ReportService {
         updated_at: timezoneHelper(),
       },
     });
+    await this.auditService.auditCreate(
+      {
+        status: 'SUCCESS',
+        register_id: id,
+      },
+      Model.REPORT,
+      req,
+    );
     return { id, message };
   }
 
-  async findAll(dto: SearchDto): Promise<any> {
+  async findAll(dto: SearchDto, req: any): Promise<any> {
     const { search, ...pagination } = dto;
     const where: any = { deleted_at: null };
     if (search) where.bodycam_user = { contains: search, mode: 'insensitive' };
-    return await paginationHelper(
+    const reports = await paginationHelper(
       this.prisma.report,
       {
         select: {
@@ -110,10 +121,27 @@ export class ReportService {
       },
       pagination,
     );
+    await this.auditService.auditGetAll(
+      {
+        status: 'SUCCESS',
+      },
+      Model.REPORT,
+      req,
+    );
+    return reports;
   }
 
-  async findOne(id: string): Promise<Report> {
-    return await this.getReportById(id);
+  async findOne(id: string, req: any): Promise<Report> {
+    const report = await this.getReportById(id);
+    await this.auditService.auditGetOne(
+      {
+        status: 'SUCCESS',
+        register_id: id,
+      },
+      Model.REPORT,
+      req,
+    );
+    return report;
   }
 
   async update(
@@ -121,9 +149,11 @@ export class ReportService {
     dto: UpdateReportDto,
     files: Array<Express.Multer.File>,
     descriptions: string[] | string,
+    req: any,
   ): Promise<Report> {
     const { evidences } = await this.getReportById(id);
-    if (dto.bodycam_id) await this.bodycamService.findOne(dto.bodycam_id);
+    if (dto.bodycam_id)
+      await this.bodycamService.getBodycamById(dto.bodycam_id);
     if (dto.subject_id) await this.subjectSubject.findOne(dto.subject_id);
     const { header, bodycam_dni, offender_dni, ...res } = dto;
     await this.prisma.report.update({
@@ -136,11 +166,26 @@ export class ReportService {
     verifyUpdateFiles(files, descriptions, evidences);
     if (files.length)
       await this.evidenceService.create(files, descriptions, id);
+    await this.auditService.auditUpdate(
+      {
+        status: 'SUCCESS',
+      },
+      Model.REPORT,
+      req,
+    );
     return await this.getReportById(id);
   }
 
-  async delete(id: string): Promise<any> {
+  async delete(id: string, req: any): Promise<any> {
     await this.getReportById(id);
+    await this.auditService.auditDelete(
+      {
+        status: 'SUCCESS',
+        register_id: id,
+      },
+      Model.REPORT,
+      req,
+    );
     await this.prisma.report.update({
       data: {
         updated_at: timezoneHelper(),

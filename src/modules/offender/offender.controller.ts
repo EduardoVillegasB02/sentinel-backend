@@ -35,7 +35,7 @@ export class OffenderController {
     return this.offenderService.findOne(id);
   }
 
-  @Roles('administrator')
+  @Roles('ADMINISTRATOR')
   @Patch(':id')
   update(
     @Param('id', ParseUUIDPipe) id: string,
@@ -44,7 +44,7 @@ export class OffenderController {
     return this.offenderService.update(id, dto);
   }
 
-  @Roles('administrator')
+  @Roles('ADMINISTRATOR')
   @Delete(':id')
   delete(@Param('id', ParseUUIDPipe) id: string) {
     return this.offenderService.delete(id);

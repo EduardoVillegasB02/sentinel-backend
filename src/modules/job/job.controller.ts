@@ -20,7 +20,7 @@ import { SearchDto } from '../../common/dto';
 export class JobController {
   constructor(private readonly jobService: JobService) {}
 
-  @Roles('administrator', 'supervisor')
+  @Roles('ADMINISTRATOR', 'SUPERVISOR')
   @Post()
   create(@Body() dto: CreateJobDto) {
     return this.jobService.create(dto);
@@ -36,13 +36,13 @@ export class JobController {
     return this.jobService.findOne(id);
   }
 
-  @Roles('administrator', 'supervisor')
+  @Roles('ADMINISTRATOR', 'SUPERVISOR')
   @Patch(':id')
   update(@Param('id', ParseUUIDPipe) id: string, @Body() dto: UpdateJobDto) {
     return this.jobService.update(id, dto);
   }
 
-  @Roles('administrator', 'supervisor')
+  @Roles('ADMINISTRATOR', 'SUPERVISOR')
   @Delete(':id')
   delete(@Param('id', ParseUUIDPipe) id: string) {
     return this.jobService.delete(id);

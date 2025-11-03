@@ -21,6 +21,7 @@ import { JwtAuthGuard, Roles, RolesGuard } from '../../auth/guard';
 import { SuccessMessage } from '../../common/decorators';
 import { SearchDto } from '../../common/dto';
 import { imageFileFilter } from '../../common/filters';
+import { Request } from 'express';
 
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('report')
@@ -29,18 +30,18 @@ export class ReportController {
 
   @Post()
   @SuccessMessage('Mensaje generado exitosamente')
-  create(@Body() dto: CreateReportDto, @Req() req: any) {
-    return this.reportService.create(dto, req.user);
+  create(@Body() dto: CreateReportDto, @Req() req: Request) {
+    return this.reportService.create(dto, req);
   }
 
   @Get()
-  findAll(@Query() dto: SearchDto) {
-    return this.reportService.findAll(dto);
+  findAll(@Query() dto: SearchDto, @Req() req: Request) {
+    return this.reportService.findAll(dto, req);
   }
 
   @Get(':id')
-  findOne(@Param('id', ParseUUIDPipe) id: string) {
-    return this.reportService.findOne(id);
+  findOne(@Param('id', ParseUUIDPipe) id: string, @Req() req: Request) {
+    return this.reportService.findOne(id, req);
   }
 
   @Patch(':id')
@@ -56,14 +57,15 @@ export class ReportController {
     @UploadedFiles() files: Array<Express.Multer.File>,
     @Body('descriptions') descriptions: string[] | string,
     @Body() dto: UpdateReportDto,
+    @Req() req: Request,
   ) {
     if (typeof descriptions === 'string') descriptions = [descriptions];
-    return this.reportService.update(id, dto, files, descriptions);
+    return this.reportService.update(id, dto, files, descriptions, req);
   }
 
-  @Roles('administrator')
+  @Roles('ADMINISTRATOR')
   @Delete(':id')
-  delete(@Param('id', ParseUUIDPipe) id: string) {
-    return this.reportService.delete(id);
+  delete(@Param('id', ParseUUIDPipe) id: string, @Req() req: Request) {
+    return this.reportService.delete(id, req);
   }
 }

@@ -1,16 +1,20 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
-import { Bodycam } from '@prisma/client';
+import { Bodycam, Model } from '@prisma/client';
 import * as xlsx from 'xlsx';
 import { CreateBodycamDto, UpdateBodycamDto } from './dto';
+import { AuditService } from '../audit/audit.service';
 import { PrismaService } from '../../prisma/prisma.service';
 import { SearchDto } from '../../common/dto';
 import { paginationHelper, timezoneHelper } from '../../common/helpers';
 
 @Injectable()
 export class BodycamService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly auditService: AuditService,
+    private readonly prisma: PrismaService,
+  ) {}
 
-  async create(dto: CreateBodycamDto): Promise<Bodycam> {
+  async create(dto: CreateBodycamDto, req: any): Promise<Bodycam> {
     const bodycam = await this.prisma.bodycam.create({
       data: {
         ...dto,
@@ -18,14 +22,22 @@ export class BodycamService {
         updated_at: timezoneHelper(),
       },
     });
+    await this.auditService.auditCreate(
+      {
+        status: 'SUCCESS',
+        register_id: bodycam.id,
+      },
+      Model.BODYCAM,
+      req,
+    );
     return this.getBodycamById(bodycam.id);
   }
 
-  async findAll(dto: SearchDto): Promise<any> {
+  async findAll(dto: SearchDto, req: any): Promise<any> {
     const { search, ...pagination } = dto;
     const where: any = { deleted_at: null };
     if (search) where.name = { contains: search, mode: 'insensitive' };
-    return await paginationHelper(
+    const bodycams = await paginationHelper(
       this.prisma.bodycam,
       {
         select: {
@@ -37,14 +49,31 @@ export class BodycamService {
       },
       pagination,
     );
+    await this.auditService.auditGetAll(
+      {
+        status: 'SUCCESS',
+      },
+      Model.BODYCAM,
+      req,
+    );
+    return bodycams;
   }
 
-  async findOne(id: string): Promise<Bodycam> {
-    return await this.getBodycamById(id);
+  async findOne(id: string, req: any): Promise<Bodycam> {
+    const bodycam = await this.getBodycamById(id);
+    await this.auditService.auditGetOne(
+      {
+        status: 'SUCCESS',
+        register_id: id,
+      },
+      Model.BODYCAM,
+      req,
+    );
+    return bodycam;
   }
 
-  async update(id: string, dto: UpdateBodycamDto): Promise<Bodycam> {
-    await this.getBodycamById(id);
+  async update(id: string, dto: UpdateBodycamDto, req: any): Promise<Bodycam> {
+    const bodycam = await this.getBodycamById(id);
     await this.prisma.bodycam.update({
       data: {
         ...dto,
@@ -52,11 +81,31 @@ export class BodycamService {
       },
       where: { id },
     });
+    for (const key in dto)
+      await this.auditService.auditGetOne(
+        {
+          status: 'SUCCESS',
+          register_id: id,
+          field: key,
+          preview_content: bodycam[key],
+          new_content: dto[key],
+        },
+        Model.BODYCAM,
+        req,
+      );
     return await this.getBodycamById(id);
   }
 
-  async delete(id: string): Promise<any> {
+  async delete(id: string, req: any): Promise<any> {
     await this.getBodycamById(id);
+    await this.auditService.auditDelete(
+      {
+        status: 'SUCCESS',
+        register_id: id,
+      },
+      Model.BODYCAM,
+      req,
+    );
     await this.prisma.bodycam.update({
       data: {
         updated_at: timezoneHelper(),
@@ -66,7 +115,7 @@ export class BodycamService {
     });
   }
 
-  async bulkUpload(file: Express.Multer.File) {
+  async bulkUpload(file: Express.Multer.File, req: any) {
     const workbook = xlsx.read(file.buffer, { type: 'buffer' });
     const sheetName = workbook.SheetNames[0];
     const rows = xlsx.utils.sheet_to_json(workbook.Sheets[sheetName]);
@@ -84,12 +133,13 @@ export class BodycamService {
     };
   }
 
-  private async getBodycamById(id: string): Promise<any> {
+  async getBodycamById(id: string): Promise<any> {
     const bodycam = await this.prisma.bodycam.findUnique({
       where: { id },
       select: {
         id: true,
         name: true,
+        serie: true,
         deleted_at: true,
       },
     });

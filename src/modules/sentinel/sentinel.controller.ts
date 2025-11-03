@@ -16,24 +16,24 @@ import { JwtAuthGuard, Roles, RolesGuard } from '../../auth/guard';
 import { SearchDto } from '../../common/dto';
 
 @UseGuards(JwtAuthGuard, RolesGuard)
-@Roles('administrator', 'supervisor')
+@Roles('ADMINISTRATOR', 'SUPERVISOR')
 @Controller('sentinel')
 export class SentinelController {
   constructor(private readonly userService: UserService) {}
 
   @Post()
   create(@Body() dto: CreateUserDto) {
-    return this.userService.create(dto, 'sentinel');
+    return this.userService.create(dto, 'SENTINEL');
   }
 
   @Get()
   findAll(@Query() dto: SearchDto) {
-    return this.userService.findAll(dto, 'sentinel');
+    return this.userService.findAll(dto, 'SENTINEL');
   }
 
   @Get(':id')
   findOne(@Param('id', ParseUUIDPipe) id: string) {
-    return this.userService.findOne(id, 'sentinel');
+    return this.userService.findOne(id, 'SENTINEL');
   }
 
   @Patch(':id')

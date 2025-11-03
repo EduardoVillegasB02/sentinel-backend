@@ -16,8 +16,7 @@ export class ResponseInterceptor implements NestInterceptor {
     const response = ctx.switchToHttp().getResponse();
     const request = ctx.switchToHttp().getRequest();
     const method = (request?.method || 'GET').toUpperCase();
-    if (response.headersSent)
-      return next.handle();
+    if (response.headersSent) return next.handle();
     const SUCCESS_MESSAGE_KEY = 'success_message';
     const customMessage = this.reflector.getAllAndOverride<string>(
       SUCCESS_MESSAGE_KEY,

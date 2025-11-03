@@ -7,10 +7,58 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum Action {
+  CREATE
+  DELETE
+  GET_ONE
+  GET_ALL
+  LOGIN
+  LOGOUT
+  UPDATE
+}
+
+enum Model {
+  AUDIT
+  BODYCAM
+  JOB
+  LACK
+  LEAD
+  OFFENDER
+  REPORT
+  SUBJECT
+  USER
+}
+
 enum Rol {
-  administrator
-  supervisor
-  sentinel
+  ADMINISTRATOR
+  SUPERVISOR
+  SENTINEL
+}
+
+enum Status {
+  BLOCKED
+  FAILED
+  SUCCESS
+}
+
+model Audit {
+  id                    String                @id @default(uuid())
+  ip                    String
+  description           String
+  register_id           String?
+  action                Action
+  model                 Model?
+  status                Status                @default(SUCCESS)
+  field                 String?
+  preview_content       String?
+  new_content           String?
+  user_id               String?
+  user                  User?                 @relation(fields: [user_id], references: [id])
+  created_at            DateTime              @default(now())
+  deleted_at            DateTime?
+  @@index([action])
+  @@index([model])
+  @@index([user_id])
 }
 
 model Bodycam {
@@ -90,14 +138,14 @@ model Report {
   id                    String                @id @default(uuid())
   address               String
   date                  DateTime
-  bodycam_user          String
-  bodycam_supervisor    String
+  bodycam_user          String?
+  bodycam_supervisor    String?
   header                Json
   latitude              Float
   longitude             Float
   message               String?
-  bodycam               Bodycam               @relation(fields: [bodycam_id], references: [id])
-  bodycam_id            String
+  bodycam               Bodycam?              @relation(fields: [bodycam_id], references: [id])
+  bodycam_id            String?
   lack                  Lack                  @relation(fields: [lack_id], references: [id])
   lack_id               String
   offender              Offender              @relation(fields: [offender_id], references: [id])
@@ -109,6 +157,16 @@ model Report {
   evidences             Evidence[]
   created_at            DateTime              @default(now())
   updated_at            DateTime              @updatedAt
+  deleted_at            DateTime?
+}
+
+model Session {
+  id                    String                @id @default(uuid())
+  ip                    String
+  token                 String
+  user_id               String
+  user                  User                  @relation(fields: [user_id], references: [id])
+  created_at            DateTime              @default(now())
   deleted_at            DateTime?
 }
 
@@ -131,9 +189,11 @@ model User {
   email                 String                @unique
   dni                   String?               @unique
   phone                 String?               @unique
-  token                 String?
+  max_ips               Int                   @default(1)
   rol                   Rol
+  audits                Audit[]
   reports               Report[]
+  sessions              Session[]
   created_at            DateTime              @default(now())
   updated_at            DateTime              @updatedAt
   deleted_at            DateTime?

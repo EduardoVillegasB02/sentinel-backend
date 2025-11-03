@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { ReportService } from './report.service';
 import { ReportController } from './report.controller';
 import { PrismaService } from '../../prisma/prisma.service';
+import { AuditModule } from '../audit/audit.module';
 import { BodycamModule } from '../bodycam/bodycam.module';
 import { EvidenceModule } from '../evidence/evidence.module';
 import { LackModule } from '../lack/lack.module';
@@ -12,6 +13,7 @@ import { UserModule } from '../user/user.module';
 
 @Module({
   imports: [
+    AuditModule,
     BodycamModule,
     EvidenceModule,
     LackModule,

@@ -27,7 +27,6 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       },
       where: {
         id: sub,
-        token: { not: null },
       },
     });
     if (!user)

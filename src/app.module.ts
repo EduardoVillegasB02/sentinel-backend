@@ -16,6 +16,9 @@ import { SubjectModule } from './modules/subject/subject.module';
 import { SupervisorModule } from './modules/supervisor/supervisor.module';
 import { UserModule } from './modules/user/user.module';
 import { ExternalModule } from './external/external.module';
+import { AuditModule } from './modules/audit/audit.module';
+import { SessionModule } from './modules/session/session.module';
+import { CacheModule } from './cache/cache.module';
 
 @Module({
   imports: [
@@ -36,6 +39,9 @@ import { ExternalModule } from './external/external.module';
     SupervisorModule,
     UserModule,
     ExternalModule,
+    AuditModule,
+    SessionModule,
+    CacheModule,
   ],
   controllers: [AppController],
   providers: [AppService],

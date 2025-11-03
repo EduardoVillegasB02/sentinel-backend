@@ -19,7 +19,7 @@ import { JwtAuthGuard, Roles, RolesGuard } from '../../auth/guard';
 export class LeadController {
   constructor(private readonly leadService: LeadService) {}
 
-  @Roles('administrator', 'supervisor')
+  @Roles('ADMINISTRATOR', 'SUPERVISOR')
   @Post()
   create(@Body() dto: CreateLeadDto) {
     return this.leadService.create(dto);
@@ -35,13 +35,13 @@ export class LeadController {
     return this.leadService.findOne(id);
   }
 
-  @Roles('administrator', 'supervisor')
+  @Roles('ADMINISTRATOR', 'SUPERVISOR')
   @Patch(':id')
   update(@Param('id', ParseUUIDPipe) id: string, @Body() dto: UpdateLeadDto) {
     return this.leadService.update(id, dto);
   }
 
-  @Roles('administrator', 'supervisor')
+  @Roles('ADMINISTRATOR', 'SUPERVISOR')
   @Delete(':id')
   delete(@Param('id', ParseUUIDPipe) id: string) {
     return this.leadService.delete(id);

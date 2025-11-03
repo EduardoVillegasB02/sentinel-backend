@@ -17,6 +17,7 @@ export class UserService {
         ...res,
         password: bcrypt.hashSync(password, 10),
         rol,
+        max_ips: 1,
         created_at: timezoneHelper(),
         updated_at: timezoneHelper(),
       },

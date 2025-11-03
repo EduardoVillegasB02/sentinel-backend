@@ -20,7 +20,7 @@ import { SearchDto } from '../../common/dto';
 export class LackController {
   constructor(private readonly lackService: LackService) {}
 
-  @Roles('administrator')
+  @Roles('ADMINISTRATOR')
   @Post()
   create(@Body() dto: CreateLackDto) {
     return this.lackService.create(dto);
@@ -36,13 +36,13 @@ export class LackController {
     return this.lackService.findOne(id);
   }
 
-  @Roles('administrator')
+  @Roles('ADMINISTRATOR')
   @Patch(':id')
   update(@Param('id', ParseUUIDPipe) id: string, @Body() dto: UpdateLackDto) {
     return this.lackService.update(id, dto);
   }
 
-  @Roles('administrator')
+  @Roles('ADMINISTRATOR')
   @Delete(':id')
   delete(@Param('id', ParseUUIDPipe) id: string) {
     return this.lackService.delete(id);
