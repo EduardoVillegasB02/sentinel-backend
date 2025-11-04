@@ -29,8 +29,10 @@ export class ResponseInterceptor implements NestInterceptor {
           data === null ||
           data instanceof Buffer ||
           typeof data === 'string'
-        )
+        ) {
+          if (method === 'DELETE') return { message: 'Eliminación exitosa' };
           return data;
+        }
         return {
           message: customMessage ?? this.resolveDefaultMessage(method, data),
           data,
@@ -47,7 +49,7 @@ export class ResponseInterceptor implements NestInterceptor {
       case 'PATCH':
         return 'Actualización exitosa';
       case 'DELETE':
-        return 'Eliminación exitosa';
+        return 'Cambio de estado exitoso';
       default:
         if (data && data.data) return 'Registros obtenidos exitosamente';
         return 'Registro obtenido exitosamente';

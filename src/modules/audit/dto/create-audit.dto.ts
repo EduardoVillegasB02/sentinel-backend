@@ -3,9 +3,9 @@ import { Action, Model, Status } from '@prisma/client';
 export class CreateAuditDto {
   ip: string;
   description: string;
-  register_id?: string;
+  register_id?: string | null;
   action: Action;
-  model?: Model;
+  model: Model;
   status: Status;
   field?: string;
   preview_content?: string;

@@ -1,5 +1,5 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
-import { Bodycam, Model } from '@prisma/client';
+import { Action, Bodycam, Model, Rol } from '@prisma/client';
 import * as xlsx from 'xlsx';
 import { CreateBodycamDto, UpdateBodycamDto } from './dto';
 import { AuditService } from '../audit/audit.service';
@@ -9,6 +9,13 @@ import { paginationHelper, timezoneHelper } from '../../common/helpers';
 
 @Injectable()
 export class BodycamService {
+  private select = {
+    id: true,
+    name: true,
+    serie: true,
+    deleted_at: true,
+  };
+
   constructor(
     private readonly auditService: AuditService,
     private readonly prisma: PrismaService,
@@ -22,53 +29,32 @@ export class BodycamService {
         updated_at: timezoneHelper(),
       },
     });
-    await this.auditService.auditCreate(
-      {
-        status: 'SUCCESS',
-        register_id: bodycam.id,
-      },
-      Model.BODYCAM,
-      req,
-    );
+    await this.auditService.auditCreate(Model.BODYCAM, bodycam.id, req);
     return this.getBodycamById(bodycam.id);
   }
 
   async findAll(dto: SearchDto, req: any): Promise<any> {
+    const { rol } = req.user;
     const { search, ...pagination } = dto;
-    const where: any = { deleted_at: null };
+    const where: any = rol !== Rol.ADMINISTRATOR ? { deleted_at: null } : {};
     if (search) where.name = { contains: search, mode: 'insensitive' };
     const bodycams = await paginationHelper(
       this.prisma.bodycam,
       {
-        select: {
-          id: true,
-          name: true,
-        },
+        select: this.select,
         where,
         orderBy: { name: 'asc' },
       },
       pagination,
     );
-    await this.auditService.auditGetAll(
-      {
-        status: 'SUCCESS',
-      },
-      Model.BODYCAM,
-      req,
-    );
+    await this.auditService.auditGetAll(Model.BODYCAM, req);
     return bodycams;
   }
 
   async findOne(id: string, req: any): Promise<Bodycam> {
-    const bodycam = await this.getBodycamById(id);
-    await this.auditService.auditGetOne(
-      {
-        status: 'SUCCESS',
-        register_id: id,
-      },
-      Model.BODYCAM,
-      req,
-    );
+    const { rol } = req.user;
+    const bodycam = await this.getBodycamById(id, rol);
+    await this.auditService.auditGetOne(Model.BODYCAM, id, req);
     return bodycam;
   }
 
@@ -81,38 +67,27 @@ export class BodycamService {
       },
       where: { id },
     });
-    for (const key in dto)
-      await this.auditService.auditGetOne(
-        {
-          status: 'SUCCESS',
-          register_id: id,
-          field: key,
-          preview_content: bodycam[key],
-          new_content: dto[key],
-        },
-        Model.BODYCAM,
-        req,
-      );
+    await this.auditService.auditUpdate(Model.BODYCAM, dto, bodycam, req);
     return await this.getBodycamById(id);
   }
 
-  async delete(id: string, req: any): Promise<any> {
-    await this.getBodycamById(id);
-    await this.auditService.auditDelete(
-      {
-        status: 'SUCCESS',
-        register_id: id,
-      },
-      Model.BODYCAM,
-      req,
-    );
+  async toggleDelete(id: string, req: any): Promise<any> {
+    const { rol } = req.user;
+    const bodycam = await this.getBodycamById(id, rol);
+    const inactive = bodycam.deleted_at;
+    const deleted_at = inactive ? null : timezoneHelper();
     await this.prisma.bodycam.update({
       data: {
         updated_at: timezoneHelper(),
-        deleted_at: timezoneHelper(),
+        deleted_at,
       },
       where: { id },
     });
+    await this.auditService.auditDelete(Model.BODYCAM, id, inactive, req);
+    return {
+      action: inactive ? Action.RESTORE : Action.DELETE,
+      id,
+    };
   }
 
   async bulkUpload(file: Express.Multer.File, req: any) {
@@ -133,18 +108,14 @@ export class BodycamService {
     };
   }
 
-  async getBodycamById(id: string): Promise<any> {
+  async getBodycamById(id: string, rol: Rol | null = null): Promise<any> {
     const bodycam = await this.prisma.bodycam.findUnique({
       where: { id },
-      select: {
-        id: true,
-        name: true,
-        serie: true,
-        deleted_at: true,
-      },
+      select: this.select,
     });
     if (!bodycam) throw new BadRequestException('Bodycam no encontrada');
-    if (bodycam.deleted_at) throw new BadRequestException('Bodycam eliminada');
+    if (rol !== Rol.ADMINISTRATOR && bodycam.deleted_at)
+      throw new BadRequestException('Bodycam eliminada');
     return bodycam;
   }
 }

@@ -14,11 +14,13 @@ enum Action {
   GET_ALL
   LOGIN
   LOGOUT
+  RESTORE
   UPDATE
 }
 
 enum Model {
   AUDIT
+  AUTH
   BODYCAM
   JOB
   LACK
@@ -47,7 +49,7 @@ model Audit {
   description           String
   register_id           String?
   action                Action
-  model                 Model?
+  model                 Model
   status                Status                @default(SUCCESS)
   field                 String?
   preview_content       String?
@@ -146,14 +148,14 @@ model Report {
   message               String?
   bodycam               Bodycam?              @relation(fields: [bodycam_id], references: [id])
   bodycam_id            String?
-  lack                  Lack                  @relation(fields: [lack_id], references: [id])
-  lack_id               String
-  offender              Offender              @relation(fields: [offender_id], references: [id])
-  offender_id           String
-  subject               Subject               @relation(fields: [subject_id], references: [id])
-  subject_id            String
-  user                  User                  @relation(fields: [user_id], references: [id])
-  user_id               String
+  lack                  Lack?                 @relation(fields: [lack_id], references: [id])
+  lack_id               String?
+  offender              Offender?             @relation(fields: [offender_id], references: [id])
+  offender_id           String?
+  subject               Subject?              @relation(fields: [subject_id], references: [id])
+  subject_id            String?
+  user                  User?                 @relation(fields: [user_id], references: [id])
+  user_id               String?
   evidences             Evidence[]
   created_at            DateTime              @default(now())
   updated_at            DateTime              @updatedAt

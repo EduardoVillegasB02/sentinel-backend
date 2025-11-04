@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { Action, Model } from '@prisma/client';
+import { Action, Audit, Model, Status } from '@prisma/client';
 import { CreateAuditDto, FilterAuditDto } from './dto';
 import { PrismaService } from '../../prisma/prisma.service';
 import { getIP, paginationHelper, timezoneHelper } from '../../common/helpers';
@@ -8,7 +8,7 @@ import { getIP, paginationHelper, timezoneHelper } from '../../common/helpers';
 export class AuditService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async auditAuth(dto: CreateAuditDto) {
+  async auditAuth(dto: CreateAuditDto): Promise<Audit> {
     return await this.prisma.audit.create({
       data: {
         ...dto,
@@ -18,29 +18,24 @@ export class AuditService {
   }
 
   async auditCreate(
-    dto: Omit<CreateAuditDto, 'action' | 'description' | 'ip' | 'model'>,
     model: Model,
+    register_id: string,
     req: any,
-  ) {
+  ): Promise<Audit> {
     return await this.create(
       {
-        ...dto,
         action: Action.CREATE,
         description: 'Registro creado',
         model,
+        register_id,
       },
       req,
     );
   }
 
-  async auditGetAll(
-    dto: Omit<CreateAuditDto, 'action' | 'description' | 'ip' | 'model'>,
-    model: Model,
-    req: any,
-  ) {
+  async auditGetAll(model: Model, req: any): Promise<Audit> {
     return await this.create(
       {
-        ...dto,
         action: Action.GET_ALL,
         description: 'Registros obtenidos',
         model,
@@ -50,48 +45,54 @@ export class AuditService {
   }
 
   async auditGetOne(
-    dto: Omit<CreateAuditDto, 'action' | 'description' | 'ip' | 'model'>,
     model: Model,
+    register_id: string,
     req: any,
-  ) {
+  ): Promise<Audit> {
     return await this.create(
       {
-        ...dto,
         action: Action.GET_ONE,
         description: 'Registro obtenido',
         model,
+        register_id,
       },
       req,
     );
   }
 
   async auditUpdate(
-    dto: Omit<CreateAuditDto, 'action' | 'description' | 'ip' | 'model'>,
     model: Model,
+    dto: any,
+    register: any,
     req: any,
-  ) {
-    return await this.create(
-      {
-        ...dto,
-        action: Action.UPDATE,
-        description: 'Registro actualizado',
-        model,
-      },
-      req,
-    );
+  ): Promise<void> {
+    for (const key in dto)
+      await this.create(
+        {
+          action: Action.UPDATE,
+          description: 'Registro actualizado',
+          model,
+          register_id: register.id,
+          field: key,
+          preview_content: register[key],
+          new_content: dto[key],
+        },
+        req,
+      );
   }
 
   async auditDelete(
-    dto: Omit<CreateAuditDto, 'action' | 'description' | 'ip' | 'model'>,
     model: Model,
+    register_id: string,
+    inactive: Date | null,
     req: any,
-  ) {
+  ): Promise<Audit> {
     return await this.create(
       {
-        ...dto,
-        action: Action.DELETE,
-        description: 'Registro eliminado',
+        action: inactive ? Action.RESTORE : Action.DELETE,
+        description: inactive ? 'Registro restaurado' : 'Registro eliminado',
         model,
+        register_id,
       },
       req,
     );
@@ -116,6 +117,7 @@ export class AuditService {
           model: true,
           status: true,
           description: true,
+          register_id: true,
           field: true,
           preview_content: true,
           new_content: true,
@@ -128,21 +130,19 @@ export class AuditService {
       },
       pagination,
     );
-    await this.auditGetAll(
-      {
-        status: 'SUCCESS',
-      },
-      Model.AUDIT,
-      req,
-    );
+    await this.auditGetAll(Model.AUDIT, req);
     return audits;
   }
 
-  private async create(dto: Omit<CreateAuditDto, 'ip'>, req: any) {
+  private async create(
+    dto: Omit<CreateAuditDto, 'ip' | 'status'>,
+    req: any,
+  ): Promise<Audit> {
     return await this.prisma.audit.create({
       data: {
         ...dto,
         ip: getIP(req),
+        status: Status.SUCCESS,
         user_id: req.user.user_id ?? null,
         created_at: timezoneHelper(),
       },

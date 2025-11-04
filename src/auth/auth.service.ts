@@ -1,14 +1,14 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
-import { Action } from '@prisma/client';
+import { Action, Model, Status } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
-import { PrismaService } from '../prisma/prisma.service';
 import { LoginDto } from './dto';
 import { JwtPayload } from './interfaces';
+import { getIP } from '../common/helpers';
 import { CacheService } from '../cache/cache.service';
+import { PrismaService } from '../prisma/prisma.service';
 import { AuditService } from '../modules/audit/audit.service';
 import { SessionService } from '../modules/session/session.service';
-import { getIP } from '../common/helpers';
 
 @Injectable()
 export class AuthService {
@@ -34,11 +34,11 @@ export class AuthService {
         deleted_at: true,
       },
     });
-    const auditData = { ip, action: Action.LOGIN };
+    const auditData = { ip, action: Action.LOGIN, model: Model.AUTH };
     if (!user) {
       await this.auditService.auditAuth({
         ...auditData,
-        status: 'FAILED',
+        status: Status.BLOCKED,
         description: 'Usuario no encontrado',
       });
       throw new UnauthorizedException('Credenciales inválidas');
@@ -46,7 +46,7 @@ export class AuthService {
     if (user.deleted_at) {
       await this.auditService.auditAuth({
         ...auditData,
-        status: 'BLOCKED',
+        status: Status.BLOCKED,
         description: 'Usuario eliminado',
       });
       throw new UnauthorizedException('Credenciales inválidas');
@@ -54,7 +54,7 @@ export class AuthService {
     if (!(await bcrypt.compare(password, user.password))) {
       await this.auditService.auditAuth({
         ...auditData,
-        status: 'FAILED',
+        status: Status.FAILED,
         description: 'Contraseña incorrecta',
       });
       throw new UnauthorizedException('Credenciales inválidas');
@@ -64,11 +64,11 @@ export class AuthService {
       if (activeIps.length >= user.max_ips) {
         await this.auditService.auditAuth({
           ...auditData,
-          status: 'BLOCKED',
+          status: Status.BLOCKED,
           description: 'Límite de IPs alcanzado',
         });
         throw new UnauthorizedException(
-          `Se alcanzó el máximo de ${user.max_ips} IPs activas permitidas`,
+          `Se alcanzó el límite de IPs activas permitidas`,
         );
       }
       await this.redis.sadd(username, ip);
@@ -84,7 +84,7 @@ export class AuthService {
     await this.sessionService.create({ ip, token, user_id: id });
     await this.auditService.auditAuth({
       ...auditData,
-      status: 'SUCCESS',
+      status: Status.SUCCESS,
       description: 'Inicio de sesión exitoso',
       user_id: id,
     });
@@ -102,8 +102,9 @@ export class AuthService {
     await this.redis.srem(username, ip);
     await this.auditService.auditAuth({
       ip,
-      action: 'LOGOUT',
-      status: 'SUCCESS',
+      action: Action.LOGOUT,
+      model: Model.AUTH,
+      status: Status.SUCCESS,
       description: 'Sesión cerrada',
       user_id,
     });

@@ -2,12 +2,11 @@ import { Module } from '@nestjs/common';
 import { BodycamService } from './bodycam.service';
 import { BodycamController } from './bodycam.controller';
 import { PrismaService } from 'src/prisma/prisma.service';
-import { AuditModule } from '../audit/audit.module';
+import { AuditService } from '../audit/audit.service';
 
 @Module({
-  imports: [AuditModule],
   controllers: [BodycamController],
-  providers: [BodycamService, PrismaService],
+  providers: [BodycamService, AuditService, PrismaService],
   exports: [BodycamService],
 })
 export class BodycamModule {}

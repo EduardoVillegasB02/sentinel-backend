@@ -3,6 +3,7 @@ import { ConfigModule } from '@nestjs/config';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { PrismaModule } from './prisma/prisma.module';
+import { AuditModule } from './modules/audit/audit.module';
 import { AuthModule } from './auth/auth.module';
 import { BodycamModule } from './modules/bodycam/bodycam.module';
 import { EvidenceModule } from './modules/evidence/evidence.module';
@@ -12,13 +13,13 @@ import { LeadModule } from './modules/lead/lead.module';
 import { OffenderModule } from './modules/offender/offender.module';
 import { ReportModule } from './modules/report/report.module';
 import { SentinelModule } from './modules/sentinel/sentinel.module';
+import { SessionModule } from './modules/session/session.module';
 import { SubjectModule } from './modules/subject/subject.module';
 import { SupervisorModule } from './modules/supervisor/supervisor.module';
 import { UserModule } from './modules/user/user.module';
 import { ExternalModule } from './external/external.module';
-import { AuditModule } from './modules/audit/audit.module';
-import { SessionModule } from './modules/session/session.module';
 import { CacheModule } from './cache/cache.module';
+import { AllExceptionsFilter } from './common/filters';
 
 @Module({
   imports: [
@@ -26,6 +27,7 @@ import { CacheModule } from './cache/cache.module';
       isGlobal: true,
     }),
     PrismaModule,
+    AuditModule,
     AuthModule,
     BodycamModule,
     EvidenceModule,
@@ -35,15 +37,14 @@ import { CacheModule } from './cache/cache.module';
     OffenderModule,
     ReportModule,
     SentinelModule,
+    SessionModule,
     SubjectModule,
     SupervisorModule,
     UserModule,
     ExternalModule,
-    AuditModule,
-    SessionModule,
     CacheModule,
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [AppService, AllExceptionsFilter],
 })
 export class AppModule {}

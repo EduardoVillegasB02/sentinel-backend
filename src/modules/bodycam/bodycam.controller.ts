@@ -54,7 +54,7 @@ export class BodycamController {
   @Roles('ADMINISTRATOR')
   @Delete(':id')
   delete(@Param('id', ParseUUIDPipe) id: string, @Req() req: Request) {
-    return this.bodycamService.delete(id, req);
+    return this.bodycamService.toggleDelete(id, req);
   }
 
   @Roles('ADMINISTRATOR')

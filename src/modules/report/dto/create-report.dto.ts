@@ -56,20 +56,22 @@ export class CreateReportDto {
   @IsNumber()
   longitude: number;
 
+  @IsOptional()
   @Matches(/^[0-9]{8}$/)
-  bodycam_dni: string;
+  bodycam_dni?: string;
 
+  @IsOptional()
   @IsString()
-  bodycam_supervisor: string;
+  bodycam_supervisor?: string;
 
   @Matches(/^[0-9]{8}$/)
   offender_dni: string;
 
   @IsUUID()
-  @IsNotEmpty()
-  bodycam_id: string;
-
   @IsOptional()
+  bodycam_id?: string;
+
+  @IsUUID()
   @IsNotEmpty()
   lack_id: string;
 

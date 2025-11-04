@@ -9,6 +9,7 @@ import {
   ParseUUIDPipe,
   Query,
   UseGuards,
+  Req,
 } from '@nestjs/common';
 import { UserService } from '../user/user.service';
 import { CreateUserDto, UpdateUserDto } from '../user/dto';
@@ -22,27 +23,31 @@ export class SentinelController {
   constructor(private readonly userService: UserService) {}
 
   @Post()
-  create(@Body() dto: CreateUserDto) {
-    return this.userService.create(dto, 'SENTINEL');
+  create(@Body() dto: CreateUserDto, @Req() req: any) {
+    return this.userService.create(dto, 'SENTINEL', req);
   }
 
   @Get()
-  findAll(@Query() dto: SearchDto) {
-    return this.userService.findAll(dto, 'SENTINEL');
+  findAll(@Query() dto: SearchDto, @Req() req: any) {
+    return this.userService.findAll(dto, 'SENTINEL', req);
   }
 
   @Get(':id')
-  findOne(@Param('id', ParseUUIDPipe) id: string) {
-    return this.userService.findOne(id, 'SENTINEL');
+  findOne(@Param('id', ParseUUIDPipe) id: string, @Req() req: any) {
+    return this.userService.findOne(id, 'SENTINEL', req);
   }
 
   @Patch(':id')
-  update(@Param('id', ParseUUIDPipe) id: string, @Body() dto: UpdateUserDto) {
-    return this.userService.update(id, dto);
+  update(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: UpdateUserDto,
+    @Req() req: any,
+  ) {
+    return this.userService.update(id, dto, req);
   }
 
   @Delete(':id')
-  delete(@Param('id', ParseUUIDPipe) id: string) {
-    return this.userService.delete(id);
+  delete(@Param('id', ParseUUIDPipe) id: string, @Req() req: any) {
+    return this.userService.toggleDelete(id, req);
   }
 }

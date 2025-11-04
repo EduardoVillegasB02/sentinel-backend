@@ -13,7 +13,7 @@ export class LeadService {
   ) {}
 
   async create(dto: CreateLeadDto): Promise<Lead> {
-    await this.jobService.findOne(dto.job_id);
+    await this.jobService.getJobById(dto.job_id);
     const lead = await this.prisma.lead.create({
       data: {
         ...dto,
@@ -56,7 +56,7 @@ export class LeadService {
   }
 
   async update(id: string, dto: UpdateLeadDto): Promise<Lead> {
-    if (dto.job_id) await this.jobService.findOne(dto.job_id);
+    if (dto.job_id) await this.jobService.getJobById(dto.job_id);
     await this.getLeadById(id);
     await this.prisma.lead.update({
       data: {
