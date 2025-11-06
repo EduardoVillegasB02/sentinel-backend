@@ -2,7 +2,7 @@ import { BadRequestException, Injectable } from '@nestjs/common';
 import { Model, Report } from '@prisma/client';
 import { instanceToPlain } from 'class-transformer';
 import * as handlebars from 'handlebars';
-import { CreateReportDto, UpdateReportDto } from './dto';
+import { CreateReportDto, FilterReportDto, UpdateReportDto } from './dto';
 import { PrismaService } from '../../prisma/prisma.service';
 import { AuditService } from '../audit/audit.service';
 import { BodycamService } from '../bodycam/bodycam.service';
@@ -13,11 +13,11 @@ import { SubjectService } from '../subject/subject.service';
 import { UserService } from '../user/user.service';
 import {
   dateString,
+  getShift,
   paginationHelper,
   timezoneHelper,
   verifyUpdateFiles,
 } from '../../common/helpers';
-import { SearchDto } from '../../common/dto';
 
 @Injectable()
 export class ReportService {
@@ -39,7 +39,7 @@ export class ReportService {
       : null;
     const lack = await this.lackService.getLackById(dto.lack_id);
     const subject = await this.subjectSubject.getSubjectById(dto.subject_id);
-    const user = await this.userService.getUserById(user_id);
+    const user = await this.userService.getUserById(user_id, req);
     const offender = await this.offenderService.create(dto.offender_dni);
     const cameraman =
       dto.bodycam_dni && dto.bodycam_dni !== dto.offender_dni
@@ -68,6 +68,7 @@ export class ReportService {
         bodycam_user,
         header: instanceToPlain(header),
         message,
+        shift: getShift(),
         offender_id: offender.id,
         user_id: req.user_id,
         created_at: timezoneHelper(),
@@ -78,10 +79,14 @@ export class ReportService {
     return { id, message };
   }
 
-  async findAll(dto: SearchDto, req: any): Promise<any> {
-    const { search, ...pagination } = dto;
+  async findAll(dto: FilterReportDto, req: any): Promise<any> {
+    const { search, jurisdiction, lack, shift, subject, ...pagination } = dto;
     const where: any = { deleted_at: null };
-    if (search) where.bodycam_user = { contains: search, mode: 'insensitive' };
+    if (search) where.offender.dni = { contains: search, mode: 'insensitive' };
+    if (lack) where.lack_id = lack;
+    if (jurisdiction) where.jurisdiction_id = jurisdiction;
+    if (shift) where.shift = shift;
+    if (subject) where.subject_id = subject;
     const reports = await paginationHelper(
       this.prisma.report,
       {
@@ -97,7 +102,11 @@ export class ReportService {
           bodycam: true,
           lack: true,
           evidences: true,
+          jurisdiction: {
+            select: { id: true, name: true },
+          },
           offender: true,
+          shift: true,
           subject: {
             select: { id: true, name: true },
           },
@@ -176,12 +185,16 @@ export class ReportService {
         date: true,
         bodycam_user: true,
         header: true,
+        jurisdiction: {
+          select: { id: true, name: true },
+        },
         latitude: true,
         longitude: true,
         message: true,
         bodycam: true,
         lack: true,
         offender: true,
+        shift: true,
         subject: {
           select: { id: true, name: true },
         },

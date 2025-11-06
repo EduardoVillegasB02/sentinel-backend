@@ -23,6 +23,7 @@ enum Model {
   AUTH
   BODYCAM
   JOB
+  JURISDICTION
   LACK
   LEAD
   OFFENDER
@@ -35,6 +36,12 @@ enum Rol {
   ADMINISTRATOR
   SUPERVISOR
   SENTINEL
+}
+
+enum Shift {
+  M
+  T
+  N
 }
 
 enum Status {
@@ -95,6 +102,15 @@ model Job {
   deleted_at            DateTime?
 }
 
+model Jurisdiction {
+  id                    String                @id @default(uuid())
+  name                  String
+  reports               Report[]
+  created_at            DateTime              @default(now())
+  updated_at            DateTime              @updatedAt
+  deleted_at            DateTime?
+}
+
 model Lack {
   id                    String                @id @default(uuid())
   article               String?
@@ -146,8 +162,11 @@ model Report {
   latitude              Float
   longitude             Float
   message               String?
+  shift                 Shift?
   bodycam               Bodycam?              @relation(fields: [bodycam_id], references: [id])
   bodycam_id            String?
+  jurisdiction          Jurisdiction?         @relation(fields: [jurisdiction_id], references: [id])
+  jurisdiction_id       String?
   lack                  Lack?                 @relation(fields: [lack_id], references: [id])
   lack_id               String?
   offender              Offender?             @relation(fields: [offender_id], references: [id])

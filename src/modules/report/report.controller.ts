@@ -16,10 +16,9 @@ import {
 import { FilesInterceptor } from '@nestjs/platform-express';
 import { memoryStorage } from 'multer';
 import { ReportService } from './report.service';
-import { CreateReportDto, UpdateReportDto } from './dto';
+import { CreateReportDto, FilterReportDto, UpdateReportDto } from './dto';
 import { JwtAuthGuard, Roles, RolesGuard } from '../../auth/guard';
 import { SuccessMessage } from '../../common/decorators';
-import { SearchDto } from '../../common/dto';
 import { imageFileFilter } from '../../common/filters';
 import { Request } from 'express';
 
@@ -35,7 +34,7 @@ export class ReportController {
   }
 
   @Get()
-  findAll(@Query() dto: SearchDto, @Req() req: Request) {
+  findAll(@Query() dto: FilterReportDto, @Req() req: Request) {
     return this.reportService.findAll(dto, req);
   }
 

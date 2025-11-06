@@ -73,6 +73,10 @@ export class CreateReportDto {
 
   @IsUUID()
   @IsNotEmpty()
+  jurisdiction_id: string;
+
+  @IsUUID()
+  @IsNotEmpty()
   lack_id: string;
 
   @IsUUID()
