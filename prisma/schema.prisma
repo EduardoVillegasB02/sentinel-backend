@@ -32,6 +32,12 @@ enum Model {
   USER
 }
 
+enum Process {
+  APPROVED
+  PENDING
+  REJECTED
+}
+
 enum Rol {
   ADMINISTRATOR
   SUPERVISOR
@@ -162,6 +168,7 @@ model Report {
   latitude              Float
   longitude             Float
   message               String?
+  process               Process?
   shift                 Shift?
   bodycam               Bodycam?              @relation(fields: [bodycam_id], references: [id])
   bodycam_id            String?
@@ -172,7 +179,7 @@ model Report {
   offender              Offender?             @relation(fields: [offender_id], references: [id])
   offender_id           String?
   subject               Subject?              @relation(fields: [subject_id], references: [id])
-  subject_id            String?
+  subject_id            String
   user                  User?                 @relation(fields: [user_id], references: [id])
   user_id               String?
   evidences             Evidence[]

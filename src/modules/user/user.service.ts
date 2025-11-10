@@ -49,6 +49,7 @@ export class UserService {
         { name: { contains: search, mode: 'insensitive' } },
         { lastname: { contains: search, mode: 'insensitive' } },
         { dni: { contains: search, mode: 'insensitive' } },
+        { username: { contains: search, mode: 'insensitive' } },
       ];
     const users = await paginationHelper(
       this.prisma.user,
@@ -116,6 +117,7 @@ export class UserService {
     const user = await this.prisma.user.findUnique({
       where: { id },
       select: {
+        id: true,
         name: true,
         lastname: true,
         username: true,
@@ -134,7 +136,7 @@ export class UserService {
     )
       throw new ForbiddenException('Operación no permitida');
     if (!user) throw new BadRequestException('Usuario no encontrado');
-    if (req.user.rol !== Rol.ADMINISTRATOR && user.deleted_at)
+    if (req && req.user.rol !== Rol.ADMINISTRATOR && user.deleted_at)
       throw new BadRequestException('Usuario eliminado');
     return user;
   }

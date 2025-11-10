@@ -108,4 +108,12 @@ export class JurisdictionService {
       throw new BadRequestException('Jurisdicción eliminado');
     return jurisdiction;
   }
+
+  async getJurisdictionsDashboard(): Promise<any> {
+    return await this.prisma.jurisdiction.findMany({
+      where: { deleted_at: null },
+      select: { id: true, name: true },
+      orderBy: { name: 'asc' },
+    });
+  }
 }

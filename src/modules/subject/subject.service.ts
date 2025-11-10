@@ -100,4 +100,13 @@ export class SubjectService {
       throw new BadRequestException('Asunto eliminado');
     return subject;
   }
+
+  async getSubjectsDashboard(): Promise<any[]> {
+    const subjects = await this.prisma.subject.findMany({
+      where: { deleted_at: null },
+      select: { id: true },
+      orderBy: { name: 'asc' },
+    });
+    return subjects.map((s) => s.id);
+  }
 }

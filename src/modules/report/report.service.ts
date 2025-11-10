@@ -3,6 +3,7 @@ import { Model, Report } from '@prisma/client';
 import { instanceToPlain } from 'class-transformer';
 import * as handlebars from 'handlebars';
 import { CreateReportDto, FilterReportDto, UpdateReportDto } from './dto';
+import { buildReportSelect } from './helpers';
 import { PrismaService } from '../../prisma/prisma.service';
 import { AuditService } from '../audit/audit.service';
 import { BodycamService } from '../bodycam/bodycam.service';
@@ -82,7 +83,10 @@ export class ReportService {
   async findAll(dto: FilterReportDto, req: any): Promise<any> {
     const { search, jurisdiction, lack, shift, subject, ...pagination } = dto;
     const where: any = { deleted_at: null };
-    if (search) where.offender.dni = { contains: search, mode: 'insensitive' };
+    if (search) {
+      if (!where.offender) where.offender = {};
+      where.offender.dni = { contains: search, mode: 'insensitive' };
+    }
     if (lack) where.lack_id = lack;
     if (jurisdiction) where.jurisdiction_id = jurisdiction;
     if (shift) where.shift = shift;
@@ -90,38 +94,7 @@ export class ReportService {
     const reports = await paginationHelper(
       this.prisma.report,
       {
-        select: {
-          id: true,
-          address: true,
-          date: true,
-          bodycam_user: true,
-          header: true,
-          latitude: true,
-          longitude: true,
-          message: true,
-          bodycam: true,
-          lack: true,
-          evidences: true,
-          jurisdiction: {
-            select: { id: true, name: true },
-          },
-          offender: true,
-          shift: true,
-          subject: {
-            select: { id: true, name: true },
-          },
-          user: {
-            select: {
-              id: true,
-              username: true,
-              name: true,
-              lastname: true,
-              email: true,
-              dni: true,
-              phone: true,
-            },
-          },
-        },
+        select: buildReportSelect({ relations: true }),
         where,
         orderBy: { created_at: 'desc' },
       },
@@ -144,7 +117,7 @@ export class ReportService {
     descriptions: string[] | string,
     req: any,
   ): Promise<Report> {
-    const report = await this.getReportById(id);
+    const report = await this.getReportById(id, false);
     if (dto.bodycam_id)
       await this.bodycamService.getBodycamById(dto.bodycam_id);
     if (dto.subject_id)
@@ -176,44 +149,14 @@ export class ReportService {
     });
   }
 
-  private async getReportById(id: string): Promise<any> {
+  private async getReportById(
+    id: string,
+    relation: Boolean = true,
+  ): Promise<any> {
+    const options = relation ? { relations: true } : { ids: true };
     const report = await this.prisma.report.findUnique({
       where: { id },
-      select: {
-        id: true,
-        address: true,
-        date: true,
-        bodycam_user: true,
-        header: true,
-        jurisdiction: {
-          select: { id: true, name: true },
-        },
-        latitude: true,
-        longitude: true,
-        message: true,
-        bodycam: true,
-        lack: true,
-        offender: true,
-        shift: true,
-        subject: {
-          select: { id: true, name: true },
-        },
-        user: {
-          select: {
-            id: true,
-            username: true,
-            name: true,
-            lastname: true,
-            email: true,
-            dni: true,
-            phone: true,
-          },
-        },
-        evidences: {
-          where: { deleted_at: null },
-        },
-        deleted_at: true,
-      },
+      select: buildReportSelect(options),
     });
     if (!report) throw new BadRequestException('Informe no encontrado');
     if (report.deleted_at) throw new BadRequestException('Informe eliminado');

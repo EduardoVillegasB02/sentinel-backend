@@ -1,49 +1,30 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
 import { FilterDashboardDto } from './dto';
 import { PrismaService } from '../../prisma/prisma.service';
-import { generalHelper } from './helpers';
+import { generalHelper, getTrendsTemplate, trendsHelper } from './helpers';
+import { JurisdictionService } from '../jurisdiction/jurisdiction.service';
+import { SubjectService } from '../subject/subject.service';
 
 @Injectable()
 export class DashboardService {
   constructor(
-    private configService: ConfigService,
     private prisma: PrismaService,
+    private jurisdictionService: JurisdictionService,
+    private subjectService: SubjectService,
   ) {}
 
-  async getStatistics(filters: FilterDashboardDto): Promise<any> {
-    const general = await this.getGeneral(filters);
-    return { general };
-  }
-
-  async getGeneral2(filters: FilterDashboardDto): Promise<any> {
-    const grouped = await this.prisma.report.groupBy({
-      by: ['subject_id'],
-      _count: { _all: true },
-    });
-
-    const subjectIds: any = grouped.map((g) => g.subject_id);
-
-    const subjects = await this.prisma.subject.findMany({
-      where: { id: { in: subjectIds } },
-      select: { id: true, name: true },
-    });
-
-    const result = grouped.map((g) => ({
-      subject_id: g.subject_id,
-      count: g._count._all,
-      name: subjects.find((s) => s.id === g.subject_id)?.name || null,
-    }));
-
-    return result;
-  }
-
   async getGeneral(filters: FilterDashboardDto) {
+    const { date_start, date_end } = this.validateDates(filters);
     const group = await this.prisma.report.groupBy({
-      by: ['shift', 'subject_id', 'jurisdiction_id'],
+      by: ['shift', 'subject_id', 'jurisdiction_id', 'process'],
+      where: {
+        date: {
+          gte: date_start,
+          lte: date_end,
+        },
+      },
       _count: { _all: true },
     });
-    console.log(group);
     const subjects = await this.prisma.subject.findMany({
       select: { id: true, name: true },
       where: { deleted_at: null },
@@ -52,12 +33,41 @@ export class DashboardService {
       select: { id: true, name: true },
       where: { deleted_at: null },
     });
-    return generalHelper(group, subjects, jurisdictions);
+    const sub = subjects.map((s) => ({ ...s, sent: 0, approved: 0 }));
+    const jur = jurisdictions.map((s) => ({ ...s, sent: 0, approved: 0 }));
+    return generalHelper(group, sub, jur);
   }
 
   async getTrends(filters: FilterDashboardDto) {
+    const { date_start, date_end } = this.validateDates(filters);
+    const reports = await this.prisma.report.findMany({
+      where: {
+        deleted_at: null,
+        process: { not: null },
+        date: {
+          gte: date_start,
+          lte: date_end,
+        },
+      },
+      select: {
+        date: true,
+        process: true,
+        subject_id: true,
+      },
+    });
+    const subjects = await this.subjectService.getSubjectsDashboard();
+    const trends = getTrendsTemplate(date_start, date_end, subjects);
+    return trendsHelper(reports, trends);
+  }
+
+  private validateDates(filters: FilterDashboardDto): any {
     const { start, end } = filters;
     if (!start || !end)
-      throw new BadRequestException('Es necesario ingresar la fecha de inicio y de fin');
+      throw new BadRequestException(
+        'Es necesario ingresar la fecha de inicio y de fin',
+      );
+    const date_start = new Date(`${start}T00:00:00.000Z`);
+    const date_end = new Date(`${end}T23:59:59.999Z`);
+    return { date_start, date_end };
   }
 }
