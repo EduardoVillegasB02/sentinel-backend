@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { Action, Audit, Model, Status } from '@prisma/client';
 import { CreateAuditDto, FilterAuditDto } from './dto';
+import { buildAuditSelect } from './helpers';
 import { PrismaService } from '../../prisma/prisma.service';
 import { getIP, paginationHelper, timezoneHelper } from '../../common/helpers';
 
@@ -98,6 +99,30 @@ export class AuditService {
     );
   }
 
+  async auditSend(id: string, req: any) {
+    return await this.create(
+      {
+        action: Action.SEND,
+        description: 'Reporte enviado',
+        model: Model.REPORT,
+        register_id: id,
+      },
+      req,
+    );
+  }
+
+  async auditValidate(id: string, approved: Boolean, req: any) {
+    return await this.create(
+      {
+        action: approved ? Action.APPROVE : Action.REJECT,
+        description: approved ? 'Informe aprobado' : 'Informe desaprobado',
+        model: Model.REPORT,
+        register_id: id,
+      },
+      req,
+    );
+  }
+
   async findAll(dto: FilterAuditDto, req: any) {
     const { search, action, model, status, user, ...pagination } = dto;
     const where: any = { deleted_at: null };
@@ -105,26 +130,13 @@ export class AuditService {
       where.user = { username: { contains: search, mode: 'insensitive' } };
     if (action) where.action = action;
     if (model) where.model = model;
+    else where.model = { not: Model.AUDIT };
     if (status) where.status = status;
     if (user) where.user_id = user;
     const audits = await paginationHelper(
       this.prisma.audit,
       {
-        select: {
-          id: true,
-          ip: true,
-          action: true,
-          model: true,
-          status: true,
-          description: true,
-          register_id: true,
-          field: true,
-          preview_content: true,
-          new_content: true,
-          user: {
-            select: { id: true, username: true },
-          },
-        },
+        select: buildAuditSelect(),
         where,
         orderBy: { created_at: 'desc' },
       },

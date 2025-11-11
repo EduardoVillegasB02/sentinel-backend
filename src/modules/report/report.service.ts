@@ -1,5 +1,5 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
-import { Model, Report } from '@prisma/client';
+import { Action, Model, Process, Report, Rol } from '@prisma/client';
 import { instanceToPlain } from 'class-transformer';
 import * as handlebars from 'handlebars';
 import { CreateReportDto, FilterReportDto, UpdateReportDto } from './dto';
@@ -14,6 +14,7 @@ import { SubjectService } from '../subject/subject.service';
 import { UserService } from '../user/user.service';
 import {
   dateString,
+  getCurrentYear,
   getShift,
   paginationHelper,
   timezoneHelper,
@@ -71,7 +72,7 @@ export class ReportService {
         message,
         shift: getShift(),
         offender_id: offender.id,
-        user_id: req.user_id,
+        user_id,
         created_at: timezoneHelper(),
         updated_at: timezoneHelper(),
       },
@@ -81,8 +82,9 @@ export class ReportService {
   }
 
   async findAll(dto: FilterReportDto, req: any): Promise<any> {
+    const { rol } = req.user;
     const { search, jurisdiction, lack, shift, subject, ...pagination } = dto;
-    const where: any = { deleted_at: null };
+    const where: any = rol !== Rol.ADMINISTRATOR ? { deleted_at: null } : {};
     if (search) {
       if (!where.offender) where.offender = {};
       where.offender.dni = { contains: search, mode: 'insensitive' };
@@ -105,7 +107,8 @@ export class ReportService {
   }
 
   async findOne(id: string, req: any): Promise<Report> {
-    const report = await this.getReportById(id);
+    const { rol } = req.user;
+    const report = await this.getReportById(id, { rol });
     await this.auditService.auditGetOne(Model.REPORT, id, req);
     return report;
   }
@@ -117,11 +120,29 @@ export class ReportService {
     descriptions: string[] | string,
     req: any,
   ): Promise<Report> {
-    const report = await this.getReportById(id, false);
+    const { rol } = req.user;
+    const report = await this.getReportById(id);
+    if (rol === Rol.VALIDATOR && !report.process)
+      throw new BadRequestException(
+        'El informe aún no fue enviado, usted no puede actualizar',
+      );
+
+    if (report.process) {
+      if (rol === Rol.SENTINEL)
+        throw new BadRequestException(
+          'El informe ya fue enviado, usted no puede actualizar',
+        );
+
+      if (rol === Rol.VALIDATOR && report.process !== Process.PENDING)
+        throw new BadRequestException(
+          'El informe ya fue validado, usted no puede actualizar',
+        );
+    }
     if (dto.bodycam_id)
       await this.bodycamService.getBodycamById(dto.bodycam_id);
     if (dto.subject_id)
       await this.subjectSubject.getSubjectById(dto.subject_id);
+    if (dto.lack_id) await this.lackService.getLackById(dto.lack_id);
     const { header, bodycam_dni, offender_dni, ...res } = dto;
     await this.prisma.report.update({
       data: {
@@ -137,29 +158,90 @@ export class ReportService {
     return await this.getReportById(id);
   }
 
-  async delete(id: string, req: any): Promise<any> {
-    await this.getReportById(id);
-    //await this.auditService.auditDelete(Model.REPORT, id, req);
+  async toggleDelete(id: string, req: any): Promise<any> {
+    const { rol } = req.user;
+    const report = await this.getReportById(id, { rol });
+    const inactive = report.deleted_at;
+    const deleted_at = inactive ? null : timezoneHelper();
     await this.prisma.report.update({
       data: {
         updated_at: timezoneHelper(),
-        deleted_at: timezoneHelper(),
+        deleted_at,
       },
       where: { id },
     });
+    await this.auditService.auditDelete(Model.REPORT, id, inactive, req);
+    return {
+      action: inactive ? Action.RESTORE : Action.DELETE,
+      id,
+    };
+  }
+
+  async send(id: string, req: any): Promise<any> {
+    const report = await this.getReportById(id);
+    if (report.evidences.length === 0)
+      throw new BadRequestException('El informe debe presentar evidencias');
+    if (report.process)
+      throw new BadRequestException('El informe ya ha sido enviado');
+    await this.prisma.report.update({
+      data: {
+        process: Process.PENDING,
+        updated_at: timezoneHelper(),
+      },
+      where: { id },
+    });
+    await this.auditService.auditSend(id, req);
+    return { id };
+  }
+
+  async validate(id: string, approved: Boolean, req: any): Promise<any> {
+    const report = await this.getReportById(id);
+    if (!report.process)
+      throw new BadRequestException('El informe aún no se ha enviado');
+    if (report.process !== Process.PENDING)
+      throw new BadRequestException('El informe ya fue validado');
+    let code: string | null = null;
+    if (approved) {
+      const year = getCurrentYear().toString();
+      console.log(year);
+      const codes = await this.prisma.report.findMany({
+        select: { code: true },
+        where: { code: { endsWith: year } },
+        orderBy: { code: 'desc' },
+      });
+      const lastCode = codes[0]?.code?.split('-')[0] ?? '0';
+      const codeNumber = Number(lastCode) + 1;
+      const format = codeNumber.toString().padStart(3, '0');
+      code = `${format}-${year}`;
+    }
+    await this.prisma.report.update({
+      data: {
+        code,
+        process: approved ? Process.APPROVED : Process.REJECTED,
+        updated_at: timezoneHelper(),
+      },
+      where: { id },
+    });
+    await this.auditService.auditValidate(id, approved, req);
+    return { id, state: approved, code };
   }
 
   private async getReportById(
     id: string,
-    relation: Boolean = true,
+    options?: {
+      rol?: Rol | null;
+      relation?: Boolean;
+    },
   ): Promise<any> {
-    const options = relation ? { relations: true } : { ids: true };
+    const { rol = null, relation = true } = options || {};
+    const select = relation ? { relations: true } : { ids: true };
     const report = await this.prisma.report.findUnique({
       where: { id },
-      select: buildReportSelect(options),
+      select: buildReportSelect(select),
     });
     if (!report) throw new BadRequestException('Informe no encontrado');
-    if (report.deleted_at) throw new BadRequestException('Informe eliminado');
+    if (rol !== Rol.ADMINISTRATOR && report.deleted_at)
+      throw new BadRequestException('Informe eliminado');
     return report;
   }
 }

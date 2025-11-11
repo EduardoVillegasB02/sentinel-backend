@@ -15,3 +15,11 @@ export function timezoneHelper(): Date {
   const [hh, mm, ss] = timePart.split(':').map(Number);
   return new Date(Date.UTC(y, m - 1, d, hh, mm, ss));
 }
+
+export function getCurrentYear(): number {
+  const fmt = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'America/Lima',
+    year: 'numeric',
+  });
+  return Number(fmt.format(new Date()));
+}

@@ -8,13 +8,16 @@ datasource db {
 }
 
 enum Action {
+  APPROVE
   CREATE
   DELETE
   GET_ONE
   GET_ALL
   LOGIN
   LOGOUT
+  REJECT
   RESTORE
+  SEND
   UPDATE
 }
 
@@ -28,6 +31,7 @@ enum Model {
   LEAD
   OFFENDER
   REPORT
+  SESSION
   SUBJECT
   USER
 }
@@ -42,6 +46,7 @@ enum Rol {
   ADMINISTRATOR
   SUPERVISOR
   SENTINEL
+  VALIDATOR
 }
 
 enum Shift {
@@ -73,13 +78,14 @@ model Audit {
   deleted_at            DateTime?
   @@index([action])
   @@index([model])
+  @@index([status])
   @@index([user_id])
 }
 
 model Bodycam {
   id                    String                @id @default(uuid())
-  name                  String
-  serie                 String
+  name                  String                @unique()
+  serie                 String?
   reports               Report[]
   created_at            DateTime              @default(now())
   updated_at            DateTime              @updatedAt
@@ -97,6 +103,7 @@ model Evidence {
   created_at            DateTime              @default(now())
   updated_at            DateTime              @updatedAt
   deleted_at            DateTime?
+  @@index([report_id])
 }
 
 model Job {
@@ -110,7 +117,7 @@ model Job {
 
 model Jurisdiction {
   id                    String                @id @default(uuid())
-  name                  String
+  name                  String                @unique()
   reports               Report[]
   created_at            DateTime              @default(now())
   updated_at            DateTime              @updatedAt
@@ -129,6 +136,7 @@ model Lack {
   created_at            DateTime              @default(now())
   updated_at            DateTime              @updatedAt
   deleted_at            DateTime?
+  @@index([subject_id])
 }
 
 model Lead {
@@ -140,6 +148,7 @@ model Lead {
   created_at            DateTime              @default(now())
   updated_at            DateTime              @updatedAt
   deleted_at            DateTime?
+  @@index([job_id])
 }
 
 model Offender {
@@ -161,31 +170,39 @@ model Offender {
 model Report {
   id                    String                @id @default(uuid())
   address               String
+  code                  String?               @unique()
   date                  DateTime
   bodycam_user          String?
   bodycam_supervisor    String?
   header                Json
   latitude              Float
   longitude             Float
+  link                  String?
   message               String?
   process               Process?
   shift                 Shift?
   bodycam               Bodycam?              @relation(fields: [bodycam_id], references: [id])
   bodycam_id            String?
-  jurisdiction          Jurisdiction?         @relation(fields: [jurisdiction_id], references: [id])
-  jurisdiction_id       String?
-  lack                  Lack?                 @relation(fields: [lack_id], references: [id])
-  lack_id               String?
-  offender              Offender?             @relation(fields: [offender_id], references: [id])
-  offender_id           String?
-  subject               Subject?              @relation(fields: [subject_id], references: [id])
+  jurisdiction          Jurisdiction          @relation(fields: [jurisdiction_id], references: [id])
+  jurisdiction_id       String
+  lack                  Lack                  @relation(fields: [lack_id], references: [id])
+  lack_id               String
+  offender              Offender              @relation(fields: [offender_id], references: [id])
+  offender_id           String
+  subject               Subject               @relation(fields: [subject_id], references: [id])
   subject_id            String
-  user                  User?                 @relation(fields: [user_id], references: [id])
-  user_id               String?
+  user                  User                  @relation(fields: [user_id], references: [id])
+  user_id               String
   evidences             Evidence[]
   created_at            DateTime              @default(now())
   updated_at            DateTime              @updatedAt
   deleted_at            DateTime?
+  @@index([bodycam_id])
+  @@index([jurisdiction_id])
+  @@index([lack_id])
+  @@index([offender_id])
+  @@index([subject_id])
+  @@index([user_id])
 }
 
 model Session {
@@ -195,12 +212,14 @@ model Session {
   user_id               String
   user                  User                  @relation(fields: [user_id], references: [id])
   created_at            DateTime              @default(now())
+  expires_at            DateTime?
   deleted_at            DateTime?
+  @@index([user_id])
 }
 
 model Subject {
   id                    String                @id @default(uuid())
-  name                  String
+  name                  String                @unique()
   lacks                 Lack[]
   reports               Report[]
   created_at            DateTime              @default(now())
@@ -225,4 +244,5 @@ model User {
   created_at            DateTime              @default(now())
   updated_at            DateTime              @updatedAt
   deleted_at            DateTime?
+  @@index([rol])
 }

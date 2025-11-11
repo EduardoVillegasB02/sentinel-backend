@@ -90,7 +90,7 @@ export class JobService {
       select: this.select,
     });
     if (!job) throw new BadRequestException('Cargo no encontrado');
-    if (rol !== Rol.ADMINISTRATOR && job.deleted_at)
+    if (rol && rol !== Rol.ADMINISTRATOR && job.deleted_at)
       throw new BadRequestException('Cargo eliminado');
     return job;
   }

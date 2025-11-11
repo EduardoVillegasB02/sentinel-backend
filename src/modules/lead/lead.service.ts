@@ -86,7 +86,6 @@ export class LeadService {
       where: { id },
     });
     await this.auditService.auditDelete(Model.JOB, id, inactive, req);
-
     return {
       action: inactive ? Action.RESTORE : Action.DELETE,
       id,
@@ -107,7 +106,7 @@ export class LeadService {
       select: buildLeadSelect(select),
     });
     if (!lead) throw new BadRequestException('Jefe no encontrado');
-    if (rol && rol !== Rol.ADMINISTRATOR && lead.deleted_at)
+    if (rol !== Rol.ADMINISTRATOR && lead.deleted_at)
       throw new BadRequestException('Jefe eliminado');
     return lead;
   }

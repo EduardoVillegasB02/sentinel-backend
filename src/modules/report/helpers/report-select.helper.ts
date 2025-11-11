@@ -11,6 +11,7 @@ export function buildReportSelect(options?: {
     latitude: true,
     longitude: true,
     message: true,
+    process: true,
     shift: true,
     evidences: {
       where: { deleted_at: null },
