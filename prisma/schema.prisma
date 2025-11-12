@@ -11,6 +11,7 @@ enum Action {
   APPROVE
   CREATE
   DELETE
+  DOWNLOAD
   GET_ONE
   GET_ALL
   LOGIN

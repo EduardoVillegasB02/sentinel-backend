@@ -14,7 +14,7 @@ import { SessionService } from '../modules/session/session.service';
 export class AuthService {
   constructor(
     private auditService: AuditService,
-    private redis: CacheService,
+    private cache: CacheService,
     private prisma: PrismaService,
     private jwtService: JwtService,
     private sessionService: SessionService,
@@ -59,7 +59,7 @@ export class AuthService {
       });
       throw new UnauthorizedException('Credenciales inválidas');
     }
-    const activeIps = await this.redis.smembers(username);
+    const activeIps = await this.cache.smembers(username);
     if (!activeIps.includes(ip)) {
       if (activeIps.length >= user.max_ips) {
         await this.auditService.auditAuth({
@@ -71,16 +71,12 @@ export class AuthService {
           `Se alcanzó el límite de IPs activas permitidas`,
         );
       }
-      await this.redis.sadd(username, ip);
-      await this.redis.expire(username);
+      await this.cache.sadd(username, ip);
+      await this.cache.expire(username);
     }
     const { id } = user;
     const token = await this.getJwtToken({ sub: id });
-    await this.redis.set(
-      `${username}:${ip}`,
-      JSON.stringify({ ip, token }),
-      true,
-    );
+    await this.cache.set(`${username}:${ip}`, token, true);
     await this.sessionService.create({ ip, token, user_id: id });
     await this.auditService.auditAuth({
       ...auditData,
@@ -98,8 +94,8 @@ export class AuthService {
   async logout(req: any) {
     const { username, user_id } = req.user;
     const ip = getIP(req);
-    await this.redis.delete(`${username}:${ip}`, true);
-    await this.redis.srem(username, ip);
+    await this.cache.delete(`${username}:${ip}`, true);
+    await this.cache.srem(username, ip);
     await this.auditService.auditAuth({
       ip,
       action: Action.LOGOUT,

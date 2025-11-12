@@ -1,7 +1,6 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Cacheable } from 'cacheable';
-import { RedisClientType } from 'redis';
 
 @Injectable()
 export class CacheService {
@@ -9,7 +8,6 @@ export class CacheService {
   constructor(
     private readonly config: ConfigService,
     @Inject('CACHE_INSTANCE') private readonly cache: Cacheable,
-    @Inject('REDIS_CLIENT') private readonly redis: RedisClientType,
   ) {}
 
   async set(key: string, value: string, session: boolean = false) {
@@ -24,28 +22,28 @@ export class CacheService {
     return await this.cache.delete(this.getKey(key, session));
   }
 
-  async rPush(key: string, value: string) {
-    await this.redis.rPush(this.getKey(key), value);
-  }
-
-  async lTrim(key: string, start: number, end: number) {
-    await this.redis.lTrim(this.getKey(key), start, end);
-  }
-
-  async lRange(key: string, start: number, end: number): Promise<string[]> {
-    return this.redis.lRange(this.getKey(key), start, end);
-  }
-
+  // Agregar a conjunto
   async sadd(key: string, value: string) {
-    await this.redis.sAdd(this.getKey(key), value);
+    const cacheKey = this.getKey(key);
+    const data = (await this.cache.get<string[]>(cacheKey)) || [];
+    if (!data.includes(value)) {
+      data.push(value);
+      await this.cache.set(cacheKey, data);
+    }
   }
 
+  // Remover de conjunto
   async srem(key: string, value: string) {
-    await this.redis.sRem(this.getKey(key), value);
+    const cacheKey = this.getKey(key);
+    const data = (await this.cache.get<string[]>(cacheKey)) || [];
+    const newData = data.filter(v => v !== value);
+    await this.cache.set(cacheKey, newData);
   }
 
+  // Obtener conjunto
   async smembers(key: string): Promise<string[]> {
-    return this.redis.sMembers(this.getKey(key));
+    const cacheKey = this.getKey(key);
+    return (await this.cache.get<string[]>(cacheKey)) || [];
   }
 
   async expire(key: string) {
@@ -55,7 +53,9 @@ export class CacheService {
       return;
     }
     const seconds = Number(ttl[0]) * 3600;
-    await this.redis.expire(this.getKey(key), seconds);
+    const cacheKey = this.getKey(key);
+    const value = await this.cache.get(cacheKey);
+    if (value) await this.cache.set(cacheKey, value, seconds * 1000);
   }
 
   private getKey(key: string, session: boolean = false) {

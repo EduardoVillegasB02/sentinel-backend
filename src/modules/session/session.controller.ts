@@ -17,14 +17,4 @@ export class SessionController {
   findAll() {
     return this.sessionService.findAll();
   }
-
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.sessionService.findOne(+id);
-  }
-
-  @Delete(':id')
-  delete(@Param('id') id: string) {
-    return this.sessionService.remove(+id);
-  }
 }
