@@ -18,4 +18,10 @@ export class FilterReportDto extends SearchDto {
   @IsEnum(Shift)
   @IsOptional()
   shift?: Shift;
+
+  @IsOptional()
+  start?: string;
+
+  @IsOptional()
+  end?: string;
 }

@@ -11,11 +11,10 @@ import {
   UseGuards,
   Req,
 } from '@nestjs/common';
-import { UserService } from '../user/user.service';
-import { CreateUserDto, UpdateUserDto } from '../user/dto';
-import { JwtAuthGuard, Roles, RolesGuard } from '../../auth/guard';
-import { SearchDto } from '../../common/dto';
 import { Request } from 'express';
+import { UserService } from './user.service';
+import { CreateUserDto, FilterUserDto, UpdateUserDto } from './dto';
+import { JwtAuthGuard, Roles, RolesGuard } from '../../auth/guard';
 
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles('ADMINISTRATOR', 'SUPERVISOR')
@@ -29,7 +28,7 @@ export class UserController {
   }
 
   @Get()
-  findAll(@Query() dto: SearchDto, @Req() req: Request) {
+  findAll(@Query() dto: FilterUserDto, @Req() req: Request) {
     return this.userService.findAll(dto, req);
   }
 

@@ -5,11 +5,11 @@ import {
 } from '@nestjs/common';
 import { Action, Model, Rol, User } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
-import { CreateUserDto, UpdateUserDto } from './dto';
+import { CreateUserDto, FilterUserDto, UpdateUserDto } from './dto';
+import { buildSelectUser } from './helpers';
 import { AuditService } from '../audit/audit.service';
 import { PrismaService } from '../../prisma/prisma.service';
 import { paginationHelper, timezoneHelper } from '../../common/helpers';
-import { SearchDto } from '../../common/dto';
 
 @Injectable()
 export class UserService {
@@ -35,9 +35,10 @@ export class UserService {
     return await this.getUserById(user.id);
   }
 
-  async findAll(dto: SearchDto, req: any): Promise<any> {
+  async findAll(dto: FilterUserDto, req: any): Promise<any> {
     const { search, ...pagination } = dto;
-    const where: any = { deleted_at: null };
+    const where: any =
+      req.user.rol !== Rol.ADMINISTRATOR ? { deleted_at: null } : {};
     if (req.user.rol !== Rol.ADMINISTRATOR) {
       if (dto.rol && dto.rol !== Rol.SENTINEL)
         throw new ForbiddenException('Usuarios no permitidos');
@@ -54,15 +55,7 @@ export class UserService {
     const users = await paginationHelper(
       this.prisma.user,
       {
-        select: {
-          id: true,
-          name: true,
-          lastname: true,
-          dni: true,
-          phone: true,
-          username: true,
-          rol: true,
-        },
+        select: buildSelectUser(),
         where,
         orderBy: { lastname: 'asc' },
       },
@@ -116,17 +109,7 @@ export class UserService {
   async getUserById(id: string, req: any = null): Promise<any> {
     const user = await this.prisma.user.findUnique({
       where: { id },
-      select: {
-        id: true,
-        name: true,
-        lastname: true,
-        username: true,
-        email: true,
-        dni: true,
-        phone: true,
-        rol: true,
-        deleted_at: true,
-      },
+      select: buildSelectUser(),
     });
     if (
       req &&

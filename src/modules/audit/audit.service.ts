@@ -76,7 +76,7 @@ export class AuditService {
           register_id: register.id,
           field: key,
           preview_content: register[key],
-          new_content: key === 'password' ? dto[key] : null,
+          new_content: key !== 'password' ? dto[key] : null,
         },
         req,
       );

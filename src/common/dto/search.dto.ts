@@ -6,8 +6,4 @@ export class SearchDto extends PaginationDto {
   @IsOptional()
   @IsString()
   search?: string;
-
-  @IsOptional()
-  @IsEnum(Rol)
-  rol?: Rol;
 }

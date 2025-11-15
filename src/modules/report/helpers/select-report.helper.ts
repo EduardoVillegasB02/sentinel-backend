@@ -1,8 +1,8 @@
-export function buildReportSelect(options?: {
+export function buildSelectReport(options?: {
   ids?: Boolean;
   relations?: Boolean;
 }) {
-  const base: any = {
+  const select: any = {
     id: true,
     address: true,
     date: true,
@@ -19,7 +19,7 @@ export function buildReportSelect(options?: {
     deleted_at: true,
   };
   if (options?.ids)
-    Object.assign(base, {
+    Object.assign(select, {
       bodycam_id: true,
       jurisdiction_id: true,
       lack_id: true,
@@ -28,7 +28,7 @@ export function buildReportSelect(options?: {
       user_id: true,
     });
   if (options?.relations)
-    Object.assign(base, {
+    Object.assign(select, {
       bodycam: {
         select: { id: true, name: true },
       },
@@ -65,5 +65,5 @@ export function buildReportSelect(options?: {
         },
       },
     });
-  return base;
+  return select;
 }

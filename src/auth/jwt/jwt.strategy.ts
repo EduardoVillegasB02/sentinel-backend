@@ -35,7 +35,6 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       throw new UnauthorizedException('Sesión finalizada, vuelva a ingresar');
     return {
       user_id: sub,
-      username: user.username,
       rol: user.rol,
     };
   }

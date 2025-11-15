@@ -36,7 +36,7 @@ export class CacheService {
   async srem(key: string, value: string) {
     const cacheKey = this.getKey(key);
     const data = (await this.cache.get<string[]>(cacheKey)) || [];
-    const newData = data.filter(v => v !== value);
+    const newData = data.filter((v) => v !== value);
     await this.cache.set(cacheKey, newData);
   }
 

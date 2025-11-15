@@ -3,7 +3,7 @@ import { Action, Model, Process, Report, Rol } from '@prisma/client';
 import { instanceToPlain } from 'class-transformer';
 import * as handlebars from 'handlebars';
 import { CreateReportDto, FilterReportDto, UpdateReportDto } from './dto';
-import { buildReportSelect } from './helpers';
+import { buildSelectReport } from './helpers';
 import { PrismaService } from '../../prisma/prisma.service';
 import { AuditService } from '../audit/audit.service';
 import { BodycamService } from '../bodycam/bodycam.service';
@@ -96,7 +96,7 @@ export class ReportService {
     const reports = await paginationHelper(
       this.prisma.report,
       {
-        select: buildReportSelect({ relations: true }),
+        select: buildSelectReport({ relations: true }),
         where,
         orderBy: { created_at: 'desc' },
       },
@@ -226,6 +226,49 @@ export class ReportService {
     return { id, state: approved, code };
   }
 
+  async getByRange(dto: FilterReportDto, req: any) {
+    const { lack, start, end } = dto;
+    if (!lack || !start || !end)
+      throw new BadRequestException('Es necesario enviar el rango y la falta');
+    await this.lackService.getLackById(lack);
+    const date_start = new Date(`${start}T00:00:00.000Z`);
+    const date_end = new Date(`${end}T23:59:59.999Z`);
+    const reports = await this.prisma.report.findMany({
+      where: {
+        lack_id: lack,
+        date: {
+          gte: date_start,
+          lte: date_end,
+        },
+      },
+      select: { date: true, offender: true, offender_id: true },
+      orderBy: { date: 'asc' },
+    });
+    const response: any = [];
+    for (const report of reports) {
+      const offender_id = report.offender_id;
+      const match = response.find((r) => r.id === offender_id);
+      const date = report.date.toISOString().split('T')[0];
+      if (match) {
+        match.dates.push(date);
+        continue;
+      }
+      const { id, name, lastname, dni, job, regime, shift } = report.offender;
+      response.push({
+        id,
+        name,
+        lastname,
+        dni,
+        job,
+        regime,
+        shift,
+        dates: [date],
+      });
+    }
+    await this.auditService.auditGetAll(Model.REPORT, req);
+    return response;
+  }
+
   private async getReportById(
     id: string,
     options?: {
@@ -237,7 +280,7 @@ export class ReportService {
     const select = relation ? { relations: true } : { ids: true };
     const report = await this.prisma.report.findUnique({
       where: { id },
-      select: buildReportSelect(select),
+      select: buildSelectReport(select),
     });
     if (!report) throw new BadRequestException('Informe no encontrado');
     if (rol !== Rol.ADMINISTRATOR && report.deleted_at)

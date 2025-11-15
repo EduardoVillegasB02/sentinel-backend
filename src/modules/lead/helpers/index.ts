@@ -1,1 +1,1 @@
-export * from './lead-select.helper';
+export * from './select-lead.helper';

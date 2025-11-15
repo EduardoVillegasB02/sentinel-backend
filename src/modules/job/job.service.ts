@@ -28,9 +28,9 @@ export class JobService {
   }
 
   async findAll(dto: SearchDto, req: any): Promise<any> {
-    const { rol } = req.user;
     const { search, ...pagination } = dto;
-    const where: any = rol !== Rol.ADMINISTRATOR ? { deleted_at: null } : {};
+    const where: any =
+      req.user.rol !== Rol.ADMINISTRATOR ? { deleted_at: null } : {};
     if (search) where.name = { contains: search, mode: 'insensitive' };
     const jobs = await paginationHelper(
       this.prisma.job,
@@ -46,8 +46,7 @@ export class JobService {
   }
 
   async findOne(id: string, req: any): Promise<Job> {
-    const { rol } = req.user;
-    const job = await this.getJobById(id, rol);
+    const job = await this.getJobById(id, req);
     await this.auditService.auditGetOne(Model.JOB, id, req);
     return job;
   }
@@ -66,8 +65,7 @@ export class JobService {
   }
 
   async toggleDelete(id: string, req: any): Promise<any> {
-    const { rol } = req.user;
-    const job = await this.getJobById(id, rol);
+    const job = await this.getJobById(id, req);
     const inactive = job.deleted_at;
     const deleted_at = inactive ? null : timezoneHelper();
     await this.prisma.job.update({
@@ -84,13 +82,14 @@ export class JobService {
     };
   }
 
-  async getJobById(id: string, rol: Rol | null = null): Promise<any> {
+  async getJobById(id: string, req: any = null): Promise<any> {
+    const rol = req ? req.user.rol : null;
     const job = await this.prisma.job.findUnique({
       where: { id },
       select: this.select,
     });
     if (!job) throw new BadRequestException('Cargo no encontrado');
-    if (rol && rol !== Rol.ADMINISTRATOR && job.deleted_at)
+    if (rol !== Rol.ADMINISTRATOR && job.deleted_at)
       throw new BadRequestException('Cargo eliminado');
     return job;
   }

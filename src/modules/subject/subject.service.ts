@@ -5,6 +5,7 @@ import { AuditService } from '../audit/audit.service';
 import { PrismaService } from '../../prisma/prisma.service';
 import { SearchDto } from '../../common/dto';
 import { paginationHelper, timezoneHelper } from '../../common/helpers';
+import { buildSelectSubject } from './helpers';
 
 @Injectable()
 export class SubjectService {
@@ -27,16 +28,13 @@ export class SubjectService {
 
   async findAll(dto: SearchDto, req: any): Promise<any> {
     const { search, ...pagination } = dto;
-    const where: any = { deleted_at: null };
+    const where: any =
+      req.user.rol !== Rol.ADMINISTRATOR ? { deleted_at: null } : {};
     if (search) where.name = { contains: search, mode: 'insensitive' };
     const subjects = await paginationHelper(
       this.prisma.subject,
       {
-        select: {
-          id: true,
-          name: true,
-          lacks: { select: { id: true, name: true } },
-        },
+        select: buildSelectSubject(),
         where,
         orderBy: { name: 'asc' },
       },
@@ -47,14 +45,13 @@ export class SubjectService {
   }
 
   async findOne(id: string, req: any): Promise<Subject> {
-    const { rol } = req.user;
-    const subject = await this.getSubjectById(id, rol);
+    const subject = await this.getSubjectById(id, { req });
     await this.auditService.auditGetOne(Model.SUBJECT, id, req);
     return subject;
   }
 
   async update(id: string, dto: UpdateSubjectDto, req: any): Promise<Subject> {
-    const subject = await this.getSubjectById(id);
+    const subject = await this.getSubjectById(id, { req, relations: false });
     await this.prisma.subject.update({
       data: {
         ...dto,
@@ -67,8 +64,7 @@ export class SubjectService {
   }
 
   async toggleDelete(id: string, req: any): Promise<any> {
-    const { rol } = req.user;
-    const subject = await this.getSubjectById(id, rol);
+    const subject = await this.getSubjectById(id, { req });
     const inactive = subject.deleted_at;
     const deleted_at = inactive ? null : timezoneHelper();
     await this.prisma.subject.update({
@@ -85,15 +81,15 @@ export class SubjectService {
     };
   }
 
-  async getSubjectById(id: string, rol: Rol | null = null): Promise<any> {
+  async getSubjectById(
+    id: string,
+    options?: { req?: any; relations?: Boolean },
+  ): Promise<any> {
+    const { req = null, relations = true } = options || {};
+    const rol = req ? req.user.rol : null;
     const subject = await this.prisma.subject.findUnique({
       where: { id },
-      select: {
-        id: true,
-        name: true,
-        lacks: { select: { id: true, name: true } },
-        deleted_at: true,
-      },
+      select: buildSelectSubject(relations),
     });
     if (!subject) throw new BadRequestException('Asunto no encontrado');
     if (rol !== Rol.ADMINISTRATOR && subject.deleted_at)

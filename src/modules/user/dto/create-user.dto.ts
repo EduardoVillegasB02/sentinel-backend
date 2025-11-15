@@ -1,4 +1,4 @@
-import { Rol, Shift } from '@prisma/client';
+import { Rol } from '@prisma/client';
 import {
   IsEmail,
   IsEnum,
@@ -51,8 +51,4 @@ export class CreateUserDto {
 
   @IsEnum(Rol)
   rol: Rol;
-
-  @IsEnum(Shift)
-  @IsOptional()
-  shift?: Shift;
 }
