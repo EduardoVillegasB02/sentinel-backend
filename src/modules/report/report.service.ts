@@ -4,6 +4,7 @@ import { instanceToPlain } from 'class-transformer';
 import * as handlebars from 'handlebars';
 import { CreateReportDto, FilterReportDto, UpdateReportDto } from './dto';
 import { buildSelectReport } from './helpers';
+import { ReportGateway } from './report.gateway';
 import { PrismaService } from '../../prisma/prisma.service';
 import { AuditService } from '../audit/audit.service';
 import { BodycamService } from '../bodycam/bodycam.service';
@@ -21,10 +22,12 @@ import {
   verifyUpdateFiles,
 } from '../../common/helpers';
 
+
 @Injectable()
 export class ReportService {
   constructor(
     private readonly prisma: PrismaService,
+    private readonly gateway: ReportGateway,
     private readonly auditService: AuditService,
     private readonly bodycamService: BodycamService,
     private readonly evidenceService: EvidenceService,
@@ -85,6 +88,7 @@ export class ReportService {
     const { rol } = req.user;
     const { search, jurisdiction, lack, shift, subject, ...pagination } = dto;
     const where: any = rol !== Rol.ADMINISTRATOR ? { deleted_at: null } : {};
+    if (rol === 'VALIDATOR') where.process = { not: null };
     if (search) {
       if (!where.offender) where.offender = {};
       where.offender.dni = { contains: search, mode: 'insensitive' };
@@ -183,13 +187,15 @@ export class ReportService {
       throw new BadRequestException('El informe debe presentar evidencias');
     if (report.process)
       throw new BadRequestException('El informe ya ha sido enviado');
-    await this.prisma.report.update({
+    const updated = await this.prisma.report.update({
       data: {
         process: Process.PENDING,
         updated_at: timezoneHelper(),
       },
       where: { id },
+      select: buildSelectReport({ relations: true }), 
     });
+    this.gateway.emitReportStatusChanged(updated);
     await this.auditService.auditSend(id, req);
     return { id };
   }
