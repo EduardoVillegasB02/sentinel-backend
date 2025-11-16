@@ -11,7 +11,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { OffenderService } from './offender.service';
-import { CreateOffenderDto, UpdateOffenderDto } from './dto';
+import { UpdateOffenderDto } from './dto';
 import { JwtAuthGuard, Roles, RolesGuard } from '../../auth/guard';
 import { SearchDto } from '../../common/dto';
 
@@ -19,6 +19,11 @@ import { SearchDto } from '../../common/dto';
 @Controller('offender')
 export class OffenderController {
   constructor(private readonly offenderService: OffenderService) {}
+
+  @Post()
+  create(@Body() dto: { dni: string }) {
+    return this.offenderService.create(dto.dni, true);
+  }
 
   @Get()
   findAll(@Query() dto: SearchDto) {

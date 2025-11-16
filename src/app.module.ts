@@ -20,6 +20,7 @@ import { ExternalModule } from './external/external.module';
 import { CacheModule } from './cache/cache.module';
 import { AllExceptionsFilter } from './common/filters';
 import { DashboardModule } from './modules/dashboard/dashboard.module';
+import { AbsenceModule } from './modules/absence/absence.module';
 
 @Module({
   imports: [
@@ -43,6 +44,7 @@ import { DashboardModule } from './modules/dashboard/dashboard.module';
     CacheModule,
     JurisdictionModule,
     DashboardModule,
+    AbsenceModule,
   ],
   controllers: [AppController],
   providers: [AppService, AllExceptionsFilter],

@@ -2,6 +2,7 @@ import {
   IsBoolean,
   IsInt,
   IsNotEmpty,
+  IsOptional,
   IsString,
   Matches,
 } from 'class-validator';
@@ -21,9 +22,6 @@ export class CreateOffenderDto {
   @IsInt()
   gestionate_id: number;
 
-  @IsBoolean()
-  verified?: boolean = false;
-
   @IsString()
   @IsNotEmpty()
   job: string;
@@ -39,4 +37,8 @@ export class CreateOffenderDto {
   @IsString()
   @IsNotEmpty()
   subgerencia: string;
+
+  @IsBoolean()
+  @IsOptional()
+  absence?: boolean;
 }

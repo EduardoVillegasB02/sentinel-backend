@@ -13,5 +13,6 @@ export function buildAuditSelect() {
     user: {
       select: { id: true, username: true },
     },
+    created_at: true,
   };
 }

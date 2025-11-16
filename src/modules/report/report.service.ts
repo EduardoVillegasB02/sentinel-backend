@@ -22,7 +22,6 @@ import {
   verifyUpdateFiles,
 } from '../../common/helpers';
 
-
 @Injectable()
 export class ReportService {
   constructor(
@@ -193,7 +192,7 @@ export class ReportService {
         updated_at: timezoneHelper(),
       },
       where: { id },
-      select: buildSelectReport({ relations: true }), 
+      select: buildSelectReport({ relations: true }),
     });
     this.gateway.emitReportStatusChanged(updated);
     await this.auditService.auditSend(id, req);

@@ -22,6 +22,11 @@ enum Action {
   UPDATE
 }
 
+enum Mode {
+  JUSTIFIED
+  UNJUSTIFIED
+}
+
 enum Model {
   AUDIT
   AUTH
@@ -60,6 +65,18 @@ enum Status {
   BLOCKED
   FAILED
   SUCCESS
+}
+
+model Absence {
+  id                    String                @id @default(uuid())
+  date                  DateTime?
+  offender_id           String
+  mode                  Mode?
+  offender              Offender              @relation(fields: [offender_id], references: [id])
+  created_at            DateTime              @default(now())
+  updated_at            DateTime              @updatedAt
+  deleted_at            DateTime?
+  @@index([offender_id])
 }
 
 model Audit {
@@ -127,6 +144,7 @@ model Jurisdiction {
 
 model Lack {
   id                    String                @id @default(uuid())
+  absence               Boolean               @default(false)
   article               String?
   content               String
   description           String?
@@ -162,6 +180,8 @@ model Offender {
   job                   String
   regime                String
   shift                 String
+  absence               Boolean               @default(false)
+  absences              Absence[]
   reports               Report[]
   created_at            DateTime              @default(now())
   updated_at            DateTime              @updatedAt

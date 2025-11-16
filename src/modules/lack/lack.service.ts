@@ -11,6 +11,7 @@ export class LackService {
   private select = {
     id: true,
     article: true,
+    absence: true,
     content: true,
     description: true,
     name: true,

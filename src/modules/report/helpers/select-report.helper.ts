@@ -5,6 +5,7 @@ export function buildSelectReport(options?: {
   const select: any = {
     id: true,
     address: true,
+    code: true,
     date: true,
     bodycam_user: true,
     header: true,
