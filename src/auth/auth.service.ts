@@ -41,11 +41,13 @@ export class AuthService {
       });
       throw new UnauthorizedException('Credenciales inválidas');
     }
+    const { id } = user;
     if (user.deleted_at) {
       await this.auditService.auditAuth({
         ...auditData,
         status: Status.BLOCKED,
         description: 'Usuario eliminado',
+        user_id: id,
       });
       throw new UnauthorizedException('Credenciales inválidas');
     }
@@ -54,18 +56,26 @@ export class AuthService {
         ...auditData,
         status: Status.FAILED,
         description: 'Contraseña incorrecta',
+        user_id: id,
       });
       throw new UnauthorizedException('Credenciales inválidas');
     }
-    const { id } = user;
     const activeIps = await this.sessionService.getActiveIps(id);
-    if (activeIps.includes(ip))
+    if (activeIps.includes(ip)) {
+      await this.auditService.auditAuth({
+        ...auditData,
+        status: Status.BLOCKED,
+        description: 'Intento de otra sesión con la misma IP',
+        user_id: id,
+      });
       throw new UnauthorizedException(`Solo se permite una sesión por IP`);
+    }
     if (activeIps.length >= user.max_ips) {
       await this.auditService.auditAuth({
         ...auditData,
         status: Status.BLOCKED,
         description: 'Límite de IPs alcanzado',
+        user_id: id,
       });
       throw new UnauthorizedException(
         `Se alcanzó el límite de IPs activas permitidas`,

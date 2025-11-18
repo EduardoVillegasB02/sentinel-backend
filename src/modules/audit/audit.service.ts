@@ -153,7 +153,7 @@ export class AuditService {
     return await this.prisma.audit.create({
       data: {
         ...dto,
-        ip: getIP(req),
+        ip: req.user.ip,
         status: Status.SUCCESS,
         user_id: req.user.user_id ?? null,
         created_at: timezoneHelper(),

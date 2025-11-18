@@ -5,21 +5,10 @@ import { AuditService } from '../audit/audit.service';
 import { PrismaService } from '../../prisma/prisma.service';
 import { SearchDto } from '../../common/dto';
 import { paginationHelper, timezoneHelper } from '../../common/helpers';
+import { buildSelectLack } from './helpers';
 
 @Injectable()
 export class LackService {
-  private select = {
-    id: true,
-    article: true,
-    absence: true,
-    content: true,
-    description: true,
-    name: true,
-    subject: { select: { id: true, name: true } },
-    subject_id: false,
-    deleted_at: true,
-  };
-
   constructor(
     private readonly auditService: AuditService,
     private readonly prisma: PrismaService,
@@ -38,13 +27,17 @@ export class LackService {
   }
 
   async findAll(dto: SearchDto, req: any): Promise<any> {
-    const { rol } = req.user;
     const { search, ...pagination } = dto;
-    const where: any = rol !== Rol.ADMINISTRATOR ? { deleted_at: null } : {};
+    const where: any =
+      req.user.rol !== Rol.ADMINISTRATOR ? { deleted_at: null } : {};
     if (search) where.name = { contains: search, mode: 'insensitive' };
     const lacks = await paginationHelper(
       this.prisma.lack,
-      { select: this.select, where, orderBy: { name: 'asc' } },
+      {
+        select: buildSelectLack({ relations: true }),
+        where,
+        orderBy: { name: 'asc' }
+      },
       pagination,
     );
     await this.auditService.auditGetAll(Model.LACK, req);
@@ -52,14 +45,13 @@ export class LackService {
   }
 
   async findOne(id: string, req: any): Promise<Lack> {
-    const { rol } = req.user;
-    const lack = await this.getLackById(id, rol);
+    const lack = await this.getLackById(id, { req });
     await this.auditService.auditGetOne(Model.LACK, id, req);
     return lack;
   }
 
   async update(id: string, dto: UpdateLackDto, req: any): Promise<Lack> {
-    const lack = await this.getLackById(id);
+    const lack = await this.getLackById(id, { relations: false });
     await this.prisma.lack.update({
       data: {
         ...dto,
@@ -72,8 +64,7 @@ export class LackService {
   }
 
   async toggleDelete(id: string, req: any): Promise<any> {
-    const { rol } = req.user;
-    const lack = await this.getLackById(id, rol);
+    const lack = await this.getLackById(id, { req });
     const inactive = lack.deleted_at;
     const deleted_at = inactive ? null : timezoneHelper();
     await this.prisma.lack.update({
@@ -90,15 +81,20 @@ export class LackService {
     };
   }
 
-  async getLackById(id: string, rol: Rol | null = null): Promise<any> {
+  async getLackById(
+    id: string,
+    options?: { req?: any | null; relations?: Boolean },
+  ): Promise<any> {
+    const { req = null, relations = true } = options || {};
+    const rol = req ? req.user.rol : null;
+    const select = relations ? { relations: true } : { ids: true };
     const lack = await this.prisma.lack.findUnique({
       where: { id },
-      select: this.select,
+      select: buildSelectLack(select),
     });
-    if (!lack)
-      throw new BadRequestException('Falta disciplinaria no encontrada');
+    if (!lack) throw new BadRequestException('Falta no encontrada');
     if (rol !== Rol.ADMINISTRATOR && lack.deleted_at)
-      throw new BadRequestException('Falta disciplinaria eliminada');
+      throw new BadRequestException('Falta eliminada');
     return lack;
   }
 }
