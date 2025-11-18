@@ -5,7 +5,6 @@ import { PassportModule } from '@nestjs/passport';
 import { AuthService } from './auth.service';
 import { AuthController } from './auth.controller';
 import { JwtStrategy } from './jwt';
-import { CacheService } from '../cache/cache.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuditService } from '../modules/audit/audit.service';
 import { SessionService } from '..//modules/session/session.service';
@@ -31,7 +30,6 @@ import { SessionService } from '..//modules/session/session.service';
   providers: [
     AuthService,
     AuditService,
-    CacheService,
     PrismaService,
     JwtStrategy,
     SessionService,

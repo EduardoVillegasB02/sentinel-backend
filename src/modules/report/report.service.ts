@@ -208,7 +208,6 @@ export class ReportService {
     let code: string | null = null;
     if (approved) {
       const year = getCurrentYear().toString();
-      console.log(year);
       const codes = await this.prisma.report.findMany({
         select: { code: true },
         where: { code: { endsWith: year } },

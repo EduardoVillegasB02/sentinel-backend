@@ -18,6 +18,7 @@ enum Action {
   LOGOUT
   REJECT
   RESTORE
+  REVOKE
   SEND
   UPDATE
 }
@@ -226,18 +227,6 @@ model Report {
   @@index([user_id])
 }
 
-model Session {
-  id                    String                @id @default(uuid())
-  ip                    String
-  token                 String
-  user_id               String
-  user                  User                  @relation(fields: [user_id], references: [id])
-  created_at            DateTime              @default(now())
-  expires_at            DateTime?
-  deleted_at            DateTime?
-  @@index([user_id])
-}
-
 model Subject {
   id                    String                @id @default(uuid())
   name                  String                @unique()
@@ -261,7 +250,6 @@ model User {
   rol                   Rol
   audits                Audit[]
   reports               Report[]
-  sessions              Session[]
   created_at            DateTime              @default(now())
   updated_at            DateTime              @updatedAt
   deleted_at            DateTime?

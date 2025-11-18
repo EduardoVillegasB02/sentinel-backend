@@ -10,11 +10,13 @@ import { buildSelectUser } from './helpers';
 import { AuditService } from '../audit/audit.service';
 import { PrismaService } from '../../prisma/prisma.service';
 import { paginationHelper, timezoneHelper } from '../../common/helpers';
+import { SessionService } from '../session/session.service';
 
 @Injectable()
 export class UserService {
   constructor(
     private readonly auditService: AuditService,
+    private readonly sessionService: SessionService,
     private readonly prisma: PrismaService,
   ) {}
 
@@ -61,6 +63,7 @@ export class UserService {
       },
       pagination,
     );
+    await this.sessionService.findAll(users.data);
     await this.auditService.auditGetAll(Model.USER, req);
     return users;
   }
@@ -119,7 +122,7 @@ export class UserService {
     )
       throw new ForbiddenException('Operación no permitida');
     if (!user) throw new BadRequestException('Usuario no encontrado');
-    if (req && req.user.rol !== Rol.ADMINISTRATOR && user.deleted_at)
+    if (req?.user?.rol !== Rol.ADMINISTRATOR && user.deleted_at)
       throw new BadRequestException('Usuario eliminado');
     return user;
   }

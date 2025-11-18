@@ -5,7 +5,6 @@ import * as bcrypt from 'bcrypt';
 import { LoginDto } from './dto';
 import { JwtPayload } from './interfaces';
 import { getIP } from '../common/helpers';
-import { CacheService } from '../cache/cache.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuditService } from '../modules/audit/audit.service';
 import { SessionService } from '../modules/session/session.service';
@@ -14,7 +13,6 @@ import { SessionService } from '../modules/session/session.service';
 export class AuthService {
   constructor(
     private auditService: AuditService,
-    private cache: CacheService,
     private prisma: PrismaService,
     private jwtService: JwtService,
     private sessionService: SessionService,
@@ -59,25 +57,22 @@ export class AuthService {
       });
       throw new UnauthorizedException('Credenciales inválidas');
     }
-    const activeIps = await this.cache.smembers(username);
-    if (!activeIps.includes(ip)) {
-      if (activeIps.length >= user.max_ips) {
-        await this.auditService.auditAuth({
-          ...auditData,
-          status: Status.BLOCKED,
-          description: 'Límite de IPs alcanzado',
-        });
-        throw new UnauthorizedException(
-          `Se alcanzó el límite de IPs activas permitidas`,
-        );
-      }
-      await this.cache.sadd(username, ip);
-      await this.cache.expire(username);
-    }
     const { id } = user;
+    const activeIps = await this.sessionService.getActiveIps(id);
+    if (activeIps.includes(ip))
+      throw new UnauthorizedException(`Solo se permite una sesión por IP`);
+    if (activeIps.length >= user.max_ips) {
+      await this.auditService.auditAuth({
+        ...auditData,
+        status: Status.BLOCKED,
+        description: 'Límite de IPs alcanzado',
+      });
+      throw new UnauthorizedException(
+        `Se alcanzó el límite de IPs activas permitidas`,
+      );
+    }
     const token = await this.getJwtToken({ sub: id });
-    await this.cache.set(`${username}:${ip}`, token, true);
-    await this.sessionService.create({ ip, token, user_id: id });
+    await this.sessionService.create({ id, ip, token });
     await this.auditService.auditAuth({
       ...auditData,
       status: Status.SUCCESS,
@@ -92,10 +87,9 @@ export class AuthService {
   }
 
   async logout(req: any) {
-    const { username, user_id } = req.user;
+    const { user_id } = req.user;
     const ip = getIP(req);
-    await this.cache.delete(`${username}:${ip}`, true);
-    await this.cache.srem(username, ip);
+    await this.sessionService.deactivate({ user_id, ip });
     await this.auditService.auditAuth({
       ip,
       action: Action.LOGOUT,
@@ -104,9 +98,7 @@ export class AuthService {
       description: 'Sesión cerrada',
       user_id,
     });
-    return {
-      user: username,
-    };
+    return { success: true };
   }
 
   private getJwtToken(payload: JwtPayload) {

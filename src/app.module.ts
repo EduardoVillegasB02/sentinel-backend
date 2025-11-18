@@ -3,9 +3,11 @@ import { ConfigModule } from '@nestjs/config';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { PrismaModule } from './prisma/prisma.module';
+import { AbsenceModule } from './modules/absence/absence.module';
 import { AuditModule } from './modules/audit/audit.module';
 import { AuthModule } from './auth/auth.module';
 import { BodycamModule } from './modules/bodycam/bodycam.module';
+import { DashboardModule } from './modules/dashboard/dashboard.module';
 import { EvidenceModule } from './modules/evidence/evidence.module';
 import { JobModule } from './modules/job/job.module';
 import { JurisdictionModule } from './modules/jurisdiction/jurisdiction.module';
@@ -17,10 +19,8 @@ import { SessionModule } from './modules/session/session.module';
 import { SubjectModule } from './modules/subject/subject.module';
 import { UserModule } from './modules/user/user.module';
 import { ExternalModule } from './external/external.module';
-import { CacheModule } from './cache/cache.module';
+import { RedisModule } from './redis/redis.module';
 import { AllExceptionsFilter } from './common/filters';
-import { DashboardModule } from './modules/dashboard/dashboard.module';
-import { AbsenceModule } from './modules/absence/absence.module';
 
 @Module({
   imports: [
@@ -28,11 +28,14 @@ import { AbsenceModule } from './modules/absence/absence.module';
       isGlobal: true,
     }),
     PrismaModule,
+    AbsenceModule,
     AuditModule,
     AuthModule,
     BodycamModule,
+    DashboardModule,
     EvidenceModule,
     JobModule,
+    JurisdictionModule,
     LackModule,
     LeadModule,
     OffenderModule,
@@ -41,10 +44,7 @@ import { AbsenceModule } from './modules/absence/absence.module';
     SubjectModule,
     UserModule,
     ExternalModule,
-    CacheModule,
-    JurisdictionModule,
-    DashboardModule,
-    AbsenceModule,
+    RedisModule,
   ],
   controllers: [AppController],
   providers: [AppService, AllExceptionsFilter],
