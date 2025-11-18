@@ -13,12 +13,12 @@ export class OffenderService {
     private readonly prisma: PrismaService,
   ) {}
 
-  async create(dni: string, absence?: boolean): Promise<any> {
+  async create(dni: string, attendance?: boolean): Promise<any> {
     const offender = await this.getOffenderByDni(dni);
     if (offender) {
-      if (absence)
+      if (attendance)
         await this.prisma.offender.update({
-          data: { absence },
+          data: { attendance },
           where: { id: offender.id },
         });
       return offender;

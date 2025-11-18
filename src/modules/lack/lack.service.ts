@@ -36,7 +36,7 @@ export class LackService {
       {
         select: buildSelectLack({ relations: true }),
         where,
-        orderBy: { name: 'asc' }
+        orderBy: { name: 'asc' },
       },
       pagination,
     );

@@ -4,6 +4,7 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { PrismaModule } from './prisma/prisma.module';
 import { AbsenceModule } from './modules/absence/absence.module';
+import { AttendanceModule } from './modules/attendance/attendance.module';
 import { AuditModule } from './modules/audit/audit.module';
 import { AuthModule } from './auth/auth.module';
 import { BodycamModule } from './modules/bodycam/bodycam.module';
@@ -29,6 +30,7 @@ import { AllExceptionsFilter } from './common/filters';
     }),
     PrismaModule,
     AbsenceModule,
+    AttendanceModule,
     AuditModule,
     AuthModule,
     BodycamModule,

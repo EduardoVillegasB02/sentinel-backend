@@ -30,6 +30,9 @@ export function buildSelectReport(options?: {
     });
   if (options?.relations)
     Object.assign(select, {
+      absences: {
+        select: { start: true, end: true, mode: true },
+      },
       bodycam: {
         select: { id: true, name: true },
       },

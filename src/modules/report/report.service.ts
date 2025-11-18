@@ -87,7 +87,11 @@ export class ReportService {
     const { rol } = req.user;
     const { search, jurisdiction, lack, shift, subject, ...pagination } = dto;
     const where: any = rol !== Rol.ADMINISTRATOR ? { deleted_at: null } : {};
-    if (rol === 'VALIDATOR') where.process = { not: null };
+    const orderBy: any = [{ created_at: 'desc' }]
+    if (rol === 'VALIDATOR') {
+      where.process = { not: null };
+      orderBy.unshift({ process: 'asc' });
+    }
     if (search) {
       if (!where.offender) where.offender = {};
       where.offender.dni = { contains: search, mode: 'insensitive' };
@@ -101,7 +105,7 @@ export class ReportService {
       {
         select: buildSelectReport({ relations: true }),
         where,
-        orderBy: { created_at: 'desc' },
+        orderBy,
       },
       pagination,
     );
@@ -230,6 +234,7 @@ export class ReportService {
     return { id, state: approved, code };
   }
 
+  // FIXED: Deprecated
   async getByRange(dto: FilterReportDto, req: any) {
     const { lack, start, end } = dto;
     if (!lack || !start || !end)
@@ -251,6 +256,7 @@ export class ReportService {
     const response: any = [];
     for (const report of reports) {
       const offender_id = report.offender_id;
+      if (!report.offender) continue;
       const match = response.find((r) => r.id === offender_id);
       const date = report.date.toISOString().split('T')[0];
       if (match) {

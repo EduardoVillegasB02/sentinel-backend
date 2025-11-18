@@ -1,38 +1,60 @@
 import { Mode } from '@prisma/client';
+import { Type } from 'class-transformer';
 import {
+  ArrayMinSize,
   IsArray,
   IsDateString,
   IsEnum,
   IsNotEmpty,
-  IsOptional,
+  IsObject,
+  IsString,
   IsUUID,
   ValidateNested,
 } from 'class-validator';
-import { Type } from 'class-transformer';
 
-export class AbsenceItemDto {
-  @IsDateString()
-  date: string;
+class RecipientDto {
+  @IsString()
+  @IsNotEmpty()
+  name: string;
 
-  @IsEnum(Mode)
-  @IsOptional()
-  mode?: Mode;
+  @IsString()
+  @IsNotEmpty()
+  job: string;
 }
 
-export class OffenderAbsenceDto {
-  @IsUUID()
-  @IsNotEmpty()
-  offender_id: string;
+class HeaderDto {
+  @IsObject({ message: 'El campo to debe ser un objeto válido' })
+  @ValidateNested()
+  @Type(() => RecipientDto)
+  to: RecipientDto;
 
-  @IsArray()
+  @IsArray({ message: 'El campo cc debe ser un arreglo válido' })
+  @ArrayMinSize(1, { message: 'Debe haber al menos un destinatario en cc' })
   @ValidateNested({ each: true })
-  @Type(() => AbsenceItemDto)
-  absences: AbsenceItemDto[];
+  @Type(() => RecipientDto)
+  cc: RecipientDto[];
 }
 
 export class CreateAbsenceDto {
-  @IsArray()
-  @ValidateNested({ each: true })
-  @Type(() => OffenderAbsenceDto)
-  items: OffenderAbsenceDto[];
+  @IsDateString()
+  start: string;
+
+  @IsDateString()
+  end: string;
+
+  @IsEnum(Mode)
+  mode: Mode;
+
+  @IsObject()
+  @ValidateNested()
+  @Type(() => HeaderDto)
+  header: HeaderDto;
+
+  @IsUUID()
+  @IsNotEmpty()
+  lack_id: string;
+
+  @IsUUID()
+  @IsNotEmpty()
+  subject_id: string;
 }

@@ -39,10 +39,10 @@ export class ReportController {
     return this.reportService.findAll(dto, req);
   }
 
-  @Get('range')
+  /* @Get('range')
   getByRange(@Query() dto: FilterReportDto, @Req() req: Request) {
     return this.reportService.getByRange(dto, req);
-  }
+  } */
 
   @Get(':id')
   findOne(@Param('id', ParseUUIDPipe) id: string, @Req() req: Request) {

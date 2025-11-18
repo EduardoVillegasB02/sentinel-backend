@@ -5,7 +5,7 @@ export function buildSelectLack(options?: {
   const select: any = {
     id: true,
     article: true,
-    absence: true,
+    attendance: true,
     content: true,
     description: true,
     name: true,

@@ -29,8 +29,8 @@ class HeaderDto {
   @Type(() => RecipientDto)
   to: RecipientDto;
 
-  @IsArray({ message: 'El campo cc debe ser un arreglo válido.' })
-  @ArrayMinSize(1, { message: 'Debe haber al menos un destinatario en "cc".' })
+  @IsArray({ message: 'El campo cc debe ser un arreglo válido' })
+  @ArrayMinSize(1, { message: 'Debe haber al menos un destinatario en cc' })
   @ValidateNested({ each: true })
   @Type(() => RecipientDto)
   cc: RecipientDto[];

@@ -40,5 +40,5 @@ export class CreateOffenderDto {
 
   @IsBoolean()
   @IsOptional()
-  absence?: boolean;
+  attendance?: boolean;
 }
