@@ -1,15 +1,21 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
-import { Job } from '@prisma/client';
+import { Action, Job, Model, Rol } from '@prisma/client';
 import { CreateJobDto, UpdateJobDto } from './dto';
+import { AuditService } from '../audit/audit.service';
 import { PrismaService } from '../../prisma/prisma.service';
 import { SearchDto } from '../../common/dto';
 import { paginationHelper, timezoneHelper } from '../../common/helpers';
 
 @Injectable()
 export class JobService {
-  constructor(private readonly prisma: PrismaService) {}
+  private select: any = { id: true, name: true, deleted_at: true };
 
-  async create(dto: CreateJobDto): Promise<Job> {
+  constructor(
+    private readonly auditService: AuditService,
+    private readonly prisma: PrismaService,
+  ) {}
+
+  async create(dto: CreateJobDto, req: any): Promise<Job> {
     const job = await this.prisma.job.create({
       data: {
         ...dto,
@@ -17,33 +23,36 @@ export class JobService {
         updated_at: timezoneHelper(),
       },
     });
+    await this.auditService.auditCreate(Model.JOB, job.id, req);
     return this.getJobById(job.id);
   }
 
-  async findAll(dto: SearchDto): Promise<any> {
+  async findAll(dto: SearchDto, req: any): Promise<any> {
     const { search, ...pagination } = dto;
-    const where: any = { deleted_at: null };
+    const where: any =
+      req.user.rol !== Rol.ADMINISTRATOR ? { deleted_at: null } : {};
     if (search) where.name = { contains: search, mode: 'insensitive' };
-    return await paginationHelper(
+    const jobs = await paginationHelper(
       this.prisma.job,
       {
-        select: {
-          id: true,
-          name: true,
-        },
+        select: this.select,
         where,
         orderBy: { name: 'asc' },
       },
       pagination,
     );
+    await this.auditService.auditGetAll(Model.JOB, req);
+    return jobs;
   }
 
-  async findOne(id: string): Promise<Job> {
-    return await this.getJobById(id);
+  async findOne(id: string, req: any): Promise<Job> {
+    const job = await this.getJobById(id, req);
+    await this.auditService.auditGetOne(Model.JOB, id, req);
+    return job;
   }
 
-  async update(id: string, dto: UpdateJobDto): Promise<Job> {
-    await this.getJobById(id);
+  async update(id: string, dto: UpdateJobDto, req: any): Promise<Job> {
+    const job = await this.getJobById(id);
     await this.prisma.job.update({
       data: {
         ...dto,
@@ -51,31 +60,37 @@ export class JobService {
       },
       where: { id },
     });
+    await this.auditService.auditUpdate(Model.JOB, dto, job, req);
     return await this.getJobById(id);
   }
 
-  async delete(id: string): Promise<any> {
-    await this.getJobById(id);
+  async toggleDelete(id: string, req: any): Promise<any> {
+    const job = await this.getJobById(id, req);
+    const inactive = job.deleted_at;
+    const deleted_at = inactive ? null : timezoneHelper();
     await this.prisma.job.update({
       data: {
         updated_at: timezoneHelper(),
-        deleted_at: timezoneHelper(),
+        deleted_at,
       },
       where: { id },
     });
+    await this.auditService.auditDelete(Model.JOB, id, inactive, req);
+    return {
+      action: inactive ? Action.RESTORE : Action.DELETE,
+      id,
+    };
   }
 
-  private async getJobById(id: string): Promise<any> {
+  async getJobById(id: string, req: any = null): Promise<any> {
+    const rol = req ? req.user.rol : null;
     const job = await this.prisma.job.findUnique({
       where: { id },
-      select: {
-        id: true,
-        name: true,
-        deleted_at: true,
-      },
+      select: this.select,
     });
     if (!job) throw new BadRequestException('Cargo no encontrado');
-    if (job.deleted_at) throw new BadRequestException('Cargo eliminado');
+    if (rol !== Rol.ADMINISTRATOR && job.deleted_at)
+      throw new BadRequestException('Cargo eliminado');
     return job;
   }
 }

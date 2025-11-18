@@ -9,7 +9,9 @@ import {
   ParseUUIDPipe,
   Query,
   UseGuards,
+  Req,
 } from '@nestjs/common';
+import { Request } from 'express';
 import { LeadService } from './lead.service';
 import { CreateLeadDto, FilterLeadDto, UpdateLeadDto } from './dto';
 import { JwtAuthGuard, Roles, RolesGuard } from '../../auth/guard';
@@ -19,31 +21,35 @@ import { JwtAuthGuard, Roles, RolesGuard } from '../../auth/guard';
 export class LeadController {
   constructor(private readonly leadService: LeadService) {}
 
-  @Roles('administrator', 'supervisor')
+  @Roles('ADMINISTRATOR', 'SUPERVISOR')
   @Post()
-  create(@Body() dto: CreateLeadDto) {
-    return this.leadService.create(dto);
+  create(@Body() dto: CreateLeadDto, @Req() req: Request) {
+    return this.leadService.create(dto, req);
   }
 
   @Get()
-  findAll(@Query() dto: FilterLeadDto) {
-    return this.leadService.findAll(dto);
+  findAll(@Query() dto: FilterLeadDto, @Req() req: Request) {
+    return this.leadService.findAll(dto, req);
   }
 
   @Get(':id')
-  findOne(@Param('id', ParseUUIDPipe) id: string) {
-    return this.leadService.findOne(id);
+  findOne(@Param('id', ParseUUIDPipe) id: string, @Req() req: Request) {
+    return this.leadService.findOne(id, req);
   }
 
-  @Roles('administrator', 'supervisor')
+  @Roles('ADMINISTRATOR', 'SUPERVISOR')
   @Patch(':id')
-  update(@Param('id', ParseUUIDPipe) id: string, @Body() dto: UpdateLeadDto) {
-    return this.leadService.update(id, dto);
+  update(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: UpdateLeadDto,
+    @Req() req: Request,
+  ) {
+    return this.leadService.update(id, dto, req);
   }
 
-  @Roles('administrator', 'supervisor')
+  @Roles('ADMINISTRATOR', 'SUPERVISOR')
   @Delete(':id')
-  delete(@Param('id', ParseUUIDPipe) id: string) {
-    return this.leadService.delete(id);
+  delete(@Param('id', ParseUUIDPipe) id: string, @Req() req: Request) {
+    return this.leadService.toggleDelete(id, req);
   }
 }

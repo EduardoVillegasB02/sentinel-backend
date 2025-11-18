@@ -11,7 +11,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { OffenderService } from './offender.service';
-import { CreateOffenderDto, UpdateOffenderDto } from './dto';
+import { UpdateOffenderDto } from './dto';
 import { JwtAuthGuard, Roles, RolesGuard } from '../../auth/guard';
 import { SearchDto } from '../../common/dto';
 
@@ -20,9 +20,19 @@ import { SearchDto } from '../../common/dto';
 export class OffenderController {
   constructor(private readonly offenderService: OffenderService) {}
 
+  @Post()
+  create(@Body() dto: { dni: string }) {
+    return this.offenderService.create(dto.dni, true);
+  }
+
   @Get()
   findAll(@Query() dto: SearchDto) {
     return this.offenderService.findAll(dto);
+  }
+
+  @Get('dni/:dni')
+  findDni(@Param('dni') dni: string) {
+    return this.offenderService.findDni(dni);
   }
 
   @Get(':id')
@@ -30,7 +40,7 @@ export class OffenderController {
     return this.offenderService.findOne(id);
   }
 
-  @Roles('administrator')
+  @Roles('ADMINISTRATOR')
   @Patch(':id')
   update(
     @Param('id', ParseUUIDPipe) id: string,
@@ -39,7 +49,7 @@ export class OffenderController {
     return this.offenderService.update(id, dto);
   }
 
-  @Roles('administrator')
+  @Roles('ADMINISTRATOR')
   @Delete(':id')
   delete(@Param('id', ParseUUIDPipe) id: string) {
     return this.offenderService.delete(id);

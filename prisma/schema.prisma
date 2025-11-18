@@ -7,16 +7,116 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum Action {
+  APPROVE
+  CREATE
+  DELETE
+  DOWNLOAD
+  GET_ONE
+  GET_ALL
+  LOGIN
+  LOGOUT
+  REJECT
+  RESTORE
+  REVOKE
+  SEND
+  UPDATE
+}
+
+enum Mode {
+  JUSTIFIED
+  UNJUSTIFIED
+}
+
+enum Model {
+  AUDIT
+  AUTH
+  BODYCAM
+  JOB
+  JURISDICTION
+  LACK
+  LEAD
+  OFFENDER
+  REPORT
+  SESSION
+  SUBJECT
+  USER
+}
+
+enum Process {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
 enum Rol {
-  administrator
-  supervisor
-  sentinel
+  ADMINISTRATOR
+  SUPERVISOR
+  SENTINEL
+  VALIDATOR
+}
+
+enum Shift {
+  M
+  T
+  N
+}
+
+enum Status {
+  BLOCKED
+  FAILED
+  SUCCESS
+}
+
+model Absence {
+  id                    String                @id @default(uuid())
+  start                 DateTime
+  end                   DateTime
+  mode                  Mode
+  report_id             String
+  report                Report                @relation(fields: [report_id], references: [id])
+  created_at            DateTime              @default(now())
+  updated_at            DateTime              @updatedAt
+  deleted_at            DateTime?
+}
+
+model Attendance {
+  id                    String                @id @default(uuid())
+  date                  DateTime?
+  offender_id           String
+  mode                  Mode?
+  offender              Offender              @relation(fields: [offender_id], references: [id])
+  created_at            DateTime              @default(now())
+  updated_at            DateTime              @updatedAt
+  deleted_at            DateTime?
+  @@index([offender_id])
+}
+
+model Audit {
+  id                    String                @id @default(uuid())
+  ip                    String
+  description           String
+  register_id           String?
+  action                Action
+  model                 Model
+  status                Status                @default(SUCCESS)
+  field                 String?
+  preview_content       String?
+  new_content           String?
+  user_id               String?
+  user                  User?                 @relation(fields: [user_id], references: [id])
+  created_at            DateTime              @default(now())
+  deleted_at            DateTime?
+  @@index([action])
+  @@index([model])
+  @@index([status])
+  @@index([user_id])
 }
 
 model Bodycam {
   id                    String                @id @default(uuid())
-  name                  String
-  serie                 String
+  name                  String                @unique()
+  serie                 String?
   reports               Report[]
   created_at            DateTime              @default(now())
   updated_at            DateTime              @updatedAt
@@ -27,11 +127,14 @@ model Evidence {
   id                    String                @id @default(uuid())
   description           String
   path                  String
-  mime_type             String
+  mimetype              String
   size                  Int
+  report                Report                @relation(fields: [report_id], references: [id])
+  report_id             String
   created_at            DateTime              @default(now())
   updated_at            DateTime              @updatedAt
   deleted_at            DateTime?
+  @@index([report_id])
 }
 
 model Job {
@@ -43,15 +146,29 @@ model Job {
   deleted_at            DateTime?
 }
 
-model Lack {
+model Jurisdiction {
   id                    String                @id @default(uuid())
-  name                  String
-  article               String
-  description           String
+  name                  String                @unique()
   reports               Report[]
   created_at            DateTime              @default(now())
   updated_at            DateTime              @updatedAt
   deleted_at            DateTime?
+}
+
+model Lack {
+  id                    String                @id @default(uuid())
+  attendance            Boolean               @default(false)
+  article               String?
+  content               String
+  description           String?
+  name                  String
+  subject_id            String
+  subject               Subject               @relation(fields: [subject_id], references: [id])
+  reports               Report[]
+  created_at            DateTime              @default(now())
+  updated_at            DateTime              @updatedAt
+  deleted_at            DateTime?
+  @@index([subject_id])
 }
 
 model Lead {
@@ -63,6 +180,7 @@ model Lead {
   created_at            DateTime              @default(now())
   updated_at            DateTime              @updatedAt
   deleted_at            DateTime?
+  @@index([job_id])
 }
 
 model Offender {
@@ -75,6 +193,8 @@ model Offender {
   job                   String
   regime                String
   shift                 String
+  attendance            Boolean               @default(false)
+  attendances           Attendance[]
   reports               Report[]
   created_at            DateTime              @default(now())
   updated_at            DateTime              @updatedAt
@@ -83,33 +203,47 @@ model Offender {
 
 model Report {
   id                    String                @id @default(uuid())
-  address               String
+  address               String?
+  code                  String?               @unique()
   date                  DateTime
-  bodycam_user          String
+  bodycam_user          String?
+  bodycam_supervisor    String?
   header                Json
-  latitude              Float
-  longitude             Float
+  latitude              Float?
+  longitude             Float?
+  link                  String?
   message               String?
-  bodycam               Bodycam               @relation(fields: [bodycam_id], references: [id])
-  bodycam_id            String
-  lack                  Lack?                 @relation(fields: [lack_id], references: [id])
-  lack_id               String?
-  offender              Offender              @relation(fields: [offender_id], references: [id])
-  offender_id           String
+  process               Process?
+  shift                 Shift?
+  bodycam               Bodycam?              @relation(fields: [bodycam_id], references: [id])
+  bodycam_id            String?
+  jurisdiction          Jurisdiction?         @relation(fields: [jurisdiction_id], references: [id])
+  jurisdiction_id       String?
+  lack                  Lack                  @relation(fields: [lack_id], references: [id])
+  lack_id               String
+  offender              Offender?             @relation(fields: [offender_id], references: [id])
+  offender_id           String?
   subject               Subject               @relation(fields: [subject_id], references: [id])
   subject_id            String
   user                  User                  @relation(fields: [user_id], references: [id])
   user_id               String
+  absences              Absence[]
+  evidences             Evidence[]
   created_at            DateTime              @default(now())
   updated_at            DateTime              @updatedAt
   deleted_at            DateTime?
+  @@index([bodycam_id])
+  @@index([jurisdiction_id])
+  @@index([lack_id])
+  @@index([offender_id])
+  @@index([subject_id])
+  @@index([user_id])
 }
 
 model Subject {
   id                    String                @id @default(uuid())
-  name                  String
-  lacks                 Boolean               @default(false)
-  content               String
+  name                  String                @unique()
+  lacks                 Lack[]
   reports               Report[]
   created_at            DateTime              @default(now())
   updated_at            DateTime              @updatedAt
@@ -125,10 +259,12 @@ model User {
   email                 String                @unique
   dni                   String?               @unique
   phone                 String?               @unique
-  token                 String?
+  max_ips               Int                   @default(1)
   rol                   Rol
+  audits                Audit[]
   reports               Report[]
   created_at            DateTime              @default(now())
   updated_at            DateTime              @updatedAt
   deleted_at            DateTime?
+  @@index([rol])
 }

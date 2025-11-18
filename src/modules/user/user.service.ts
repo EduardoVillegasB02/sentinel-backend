@@ -1,104 +1,129 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
-import { Rol, User } from '@prisma/client';
+import {
+  BadRequestException,
+  ForbiddenException,
+  Injectable,
+} from '@nestjs/common';
+import { Action, Model, Rol, User } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
-import { CreateUserDto, UpdateUserDto } from './dto';
+import { CreateUserDto, FilterUserDto, UpdateUserDto } from './dto';
+import { buildSelectUser } from './helpers';
+import { AuditService } from '../audit/audit.service';
 import { PrismaService } from '../../prisma/prisma.service';
 import { paginationHelper, timezoneHelper } from '../../common/helpers';
-import { SearchDto } from '../../common/dto';
+import { SessionService } from '../session/session.service';
 
 @Injectable()
 export class UserService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly auditService: AuditService,
+    private readonly sessionService: SessionService,
+    private readonly prisma: PrismaService,
+  ) {}
 
-  async create(dto: CreateUserDto, rol: Rol): Promise<User> {
+  async create(dto: CreateUserDto, req: any): Promise<User> {
     const { password, ...res } = dto;
+    if (req.user.rol === Rol.SUPERVISOR && res.rol !== Rol.SENTINEL)
+      throw new ForbiddenException('Creación no permitida');
     const user = await this.prisma.user.create({
       data: {
         ...res,
         password: bcrypt.hashSync(password, 10),
-        rol,
+        max_ips: 1,
         created_at: timezoneHelper(),
         updated_at: timezoneHelper(),
       },
     });
+    await this.auditService.auditCreate(Model.USER, user.id, req);
     return await this.getUserById(user.id);
   }
 
-  async findAll(dto: SearchDto, rol: Rol): Promise<any> {
+  async findAll(dto: FilterUserDto, req: any): Promise<any> {
     const { search, ...pagination } = dto;
-    const where: any = { rol, deleted_at: null };
+    const where: any =
+      req.user.rol !== Rol.ADMINISTRATOR ? { deleted_at: null } : {};
+    if (req.user.rol !== Rol.ADMINISTRATOR) {
+      if (dto.rol && dto.rol !== Rol.SENTINEL)
+        throw new ForbiddenException('Usuarios no permitidos');
+      else dto.rol = Rol.SENTINEL;
+    }
+    where.rol = dto.rol;
     if (search)
       where.OR = [
         { name: { contains: search, mode: 'insensitive' } },
         { lastname: { contains: search, mode: 'insensitive' } },
         { dni: { contains: search, mode: 'insensitive' } },
+        { username: { contains: search, mode: 'insensitive' } },
       ];
-    return await paginationHelper(
+    const users = await paginationHelper(
       this.prisma.user,
       {
-        select: {
-          id: true,
-          name: true,
-          lastname: true,
-          dni: true,
-          phone: true,
-          username: true,
-        },
+        select: buildSelectUser(),
         where,
         orderBy: { lastname: 'asc' },
       },
       pagination,
     );
+    await this.sessionService.findAll(users.data);
+    await this.auditService.auditGetAll(Model.USER, req);
+    return users;
   }
 
-  async findOne(id: string, rol?: Rol): Promise<User> {
-    return await this.getUserById(id, rol);
+  async findOne(id: string, req: any): Promise<User> {
+    const user = await this.getUserById(id, req);
+    await this.auditService.auditGetOne(Model.USER, id, req);
+    return user;
   }
 
-  async update(id: string, dto: UpdateUserDto): Promise<User> {
+  async update(id: string, dto: UpdateUserDto, req: any): Promise<User> {
     const { password, ...res } = dto;
-    await this.getUserById(id);
+    const user = await this.getUserById(id, req);
     const data = password
       ? {
           password: bcrypt.hashSync(password, 10),
-          update_at: timezoneHelper(),
+          updated_at: timezoneHelper(),
           ...res,
         }
-      : { update_at: timezoneHelper(), ...res };
+      : { updated_at: timezoneHelper(), ...res };
     await this.prisma.user.update({
       data,
       where: { id },
     });
-    return await this.getUserById(id);
+    await this.auditService.auditUpdate(Model.USER, dto, user, req);
+    return await this.getUserById(id, req);
   }
 
-  async delete(id: string): Promise<any> {
-    await this.getUserById(id);
+  async toggleDelete(id: string, req: any): Promise<any> {
+    const user = await this.getUserById(id, req);
+    const inactive = user.deleted_at;
+    const deleted_at = inactive ? null : timezoneHelper();
     await this.prisma.user.update({
       data: {
         updated_at: timezoneHelper(),
-        deleted_at: timezoneHelper(),
+        deleted_at,
       },
       where: { id },
     });
+    await this.auditService.auditDelete(Model.USER, id, inactive, req);
+    return {
+      action: inactive ? Action.RESTORE : Action.DELETE,
+      id,
+    };
   }
-
-  private async getUserById(id: string, rol: Rol | null = null): Promise<any> {
-    const where = rol ? { id, rol } : { id };
+  async getUserById(id: string, req: any = null): Promise<any> {
     const user = await this.prisma.user.findUnique({
-      where,
-      select: {
-        name: true,
-        lastname: true,
-        username: true,
-        email: true,
-        dni: true,
-        phone: true,
-        deleted_at: true,
-      },
+      where: { id },
+      select: buildSelectUser(),
     });
+    if (
+      req &&
+      user &&
+      req.user.rol !== Rol.ADMINISTRATOR &&
+      user.rol !== Rol.SENTINEL
+    )
+      throw new ForbiddenException('Operación no permitida');
     if (!user) throw new BadRequestException('Usuario no encontrado');
-    if (user.deleted_at) throw new BadRequestException('Usuario eliminado');
+    if (req?.user?.rol !== Rol.ADMINISTRATOR && user.deleted_at)
+      throw new BadRequestException('Usuario eliminado');
     return user;
   }
 }

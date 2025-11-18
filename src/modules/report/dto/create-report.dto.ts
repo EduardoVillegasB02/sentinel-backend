@@ -29,8 +29,8 @@ class HeaderDto {
   @Type(() => RecipientDto)
   to: RecipientDto;
 
-  @IsArray({ message: 'El campo cc debe ser un arreglo válido.' })
-  @ArrayMinSize(1, { message: 'Debe haber al menos un destinatario en "cc".' })
+  @IsArray({ message: 'El campo cc debe ser un arreglo válido' })
+  @ArrayMinSize(1, { message: 'Debe haber al menos un destinatario en cc' })
   @ValidateNested({ each: true })
   @Type(() => RecipientDto)
   cc: RecipientDto[];
@@ -56,19 +56,30 @@ export class CreateReportDto {
   @IsNumber()
   longitude: number;
 
+  @IsOptional()
   @Matches(/^[0-9]{8}$/)
-  bodycam_dni: string;
+  bodycam_dni?: string;
+
+  @IsOptional()
+  @IsString()
+  bodycam_supervisor?: string;
 
   @Matches(/^[0-9]{8}$/)
   offender_dni: string;
 
   @IsUUID()
-  bodycam_id: string;
-
   @IsOptional()
-  @IsUUID()
-  lack_id?: string;
+  bodycam_id?: string;
 
   @IsUUID()
+  @IsNotEmpty()
+  jurisdiction_id: string;
+
+  @IsUUID()
+  @IsNotEmpty()
+  lack_id: string;
+
+  @IsUUID()
+  @IsNotEmpty()
   subject_id: string;
 }

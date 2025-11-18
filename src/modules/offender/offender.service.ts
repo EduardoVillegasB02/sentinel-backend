@@ -13,9 +13,16 @@ export class OffenderService {
     private readonly prisma: PrismaService,
   ) {}
 
-  async create(dni: string, verified?: boolean): Promise<any> {
-    const offender = await this.getOffenderByDni(dni, verified);
-    if (offender) return offender;
+  async create(dni: string, attendance?: boolean): Promise<any> {
+    const offender = await this.getOffenderByDni(dni);
+    if (offender) {
+      if (attendance)
+        await this.prisma.offender.update({
+          data: { attendance },
+          where: { id: offender.id },
+        });
+      return offender;
+    }
     const dto = await this.verifyPersonal(dni);
     const newOffender = await this.prisma.offender.create({
       data: {
@@ -78,6 +85,10 @@ export class OffenderService {
     });
   }
 
+  async findDni(dni: string): Promise<any> {
+    return await this.verifyPersonal(dni);
+  }
+
   private async getOffenderById(id: string): Promise<any> {
     const offender = await this.prisma.offender.findUnique({
       where: { id },
@@ -98,19 +109,12 @@ export class OffenderService {
     return offender;
   }
 
-  private async getOffenderByDni(
-    dni: string,
-    verified: boolean = false,
-  ): Promise<any> {
+  private async getOffenderByDni(dni: string): Promise<any> {
     const offender = await this.prisma.offender.findUnique({
       where: { dni },
     });
     if (!offender) return null;
-    if (!verified)
-      throw new BadRequestException(
-        'El personal seleccionado ya cuenta con un informe',
-      );
-    return offender.id;
+    return offender;
   }
 
   async verifyPersonal(dni: string) {

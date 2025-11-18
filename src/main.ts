@@ -1,4 +1,4 @@
-import { HttpAdapterHost, NestFactory, Reflector } from '@nestjs/core';
+import { NestFactory, Reflector } from '@nestjs/core';
 import { Logger, ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { AppModule } from './app.module';
@@ -22,8 +22,7 @@ async function bootstrap() {
     new PrismaExceptionInterceptor(),
     new ResponseInterceptor(reflector),
   );
-  const httpAdapterHost = app.get(HttpAdapterHost);
-  app.useGlobalFilters(new AllExceptionsFilter(httpAdapterHost));
+  app.useGlobalFilters(app.get(AllExceptionsFilter));
   app.setGlobalPrefix('api');
   app.useGlobalPipes(
     new ValidationPipe({

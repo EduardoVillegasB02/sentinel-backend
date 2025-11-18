@@ -1,45 +1,29 @@
 import {
   Controller,
-  Get,
-  Post,
-  Body,
-  Patch,
-  Param,
   Delete,
+  Get,
+  Param,
+  ParseUUIDPipe,
+  Res,
+  UseGuards,
 } from '@nestjs/common';
+import { Response } from 'express';
 import { EvidenceService } from './evidence.service';
-import { CreateEvidenceDto } from './dto/create-evidence.dto';
-import { UpdateEvidenceDto } from './dto/update-evidence.dto';
+import { JwtAuthGuard, RolesGuard } from 'src/auth/guard';
 
+@UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('evidence')
 export class EvidenceController {
   constructor(private readonly evidenceService: EvidenceService) {}
 
-  @Post()
-  create(@Body() createEvidenceDto: CreateEvidenceDto) {
-    return this.evidenceService.create(createEvidenceDto);
-  }
-
-  @Get()
-  findAll() {
-    return this.evidenceService.findAll();
-  }
-
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.evidenceService.findOne(+id);
-  }
-
-  @Patch(':id')
-  update(
-    @Param('id') id: string,
-    @Body() updateEvidenceDto: UpdateEvidenceDto,
-  ) {
-    return this.evidenceService.update(+id, updateEvidenceDto);
+  @Get('*path')
+  getFile(@Param('path') path: string[] | string, @Res() res: Response) {
+    const filePath = this.evidenceService.getFile(path);
+    return res.sendFile(filePath);
   }
 
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.evidenceService.remove(+id);
+  delete(@Param('id', ParseUUIDPipe) id: string) {
+    return this.evidenceService.delete(id);
   }
 }
