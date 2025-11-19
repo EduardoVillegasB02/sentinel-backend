@@ -222,14 +222,16 @@ export class ReportService {
       const format = codeNumber.toString().padStart(3, '0');
       code = `${format}-${year}`;
     }
-    await this.prisma.report.update({
+    const updated = await this.prisma.report.update({
       data: {
         code,
         process: approved ? Process.APPROVED : Process.REJECTED,
         updated_at: timezoneHelper(),
       },
       where: { id },
+      select: buildSelectReport({ relations: true }),
     });
+    this.gateway.emitReportStatusValidate(updated);
     await this.auditService.auditValidate(id, approved, req);
     return { id, state: approved, code };
   }

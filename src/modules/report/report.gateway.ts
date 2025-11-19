@@ -11,4 +11,8 @@ export class ReportGateway {
   emitReportStatusChanged(report: any) {
     this.server.emit('report_status_changed', report);
   }
+
+  emitReportStatusValidate(report: any) {
+    this.server.emit('report_status_validate', report);
+  }
 }
