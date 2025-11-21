@@ -109,7 +109,7 @@ export class SubjectService {
 
   async bulkUpload(file: Express.Multer.File, req: any) {
     const subjects = await this.prisma.subject.findMany();
-    if (subjects.length === 0)
+    if (subjects.length !== 0)
       throw new BadRequestException('Solo se puedo realizar una vez');
     const workbook = xlsx.read(file.buffer, { type: 'buffer' });
     const sheetName = workbook.SheetNames[0];

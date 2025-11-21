@@ -105,7 +105,7 @@ export class LackService {
       where: { deleted_at: null },
     });
     const lacks = await this.prisma.lack.findMany();
-    if (lacks.length === 0)
+    if (lacks.length !== 0)
       throw new BadRequestException('Solo se puedo realizar una vez');
     const workbook = xlsx.read(file.buffer, { type: 'buffer' });
     const sheetName = workbook.SheetNames[0];
