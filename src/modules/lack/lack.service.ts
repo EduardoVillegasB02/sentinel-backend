@@ -124,12 +124,12 @@ export class LackService {
         };
       })
       .filter((item) => item !== null) as {
-        name: string;
-        content: string;
-        subject_id: string;
-        created_at: Date;
-        updated_at: Date;
-      }[];
+      name: string;
+      content: string;
+      subject_id: string;
+      created_at: Date;
+      updated_at: Date;
+    }[];
     await this.prisma.lack.createMany({ data });
     return {
       message: 'Creación masiva exitosa',

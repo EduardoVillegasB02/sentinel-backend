@@ -116,4 +116,12 @@ export class JurisdictionService {
       orderBy: { name: 'asc' },
     });
   }
+
+  async getByGestionate(id: number): Promise<any> {
+    const jurisdiction = await this.prisma.jurisdiction.findFirst({
+      select: { id: true },
+      where: { deleted_at: null, gestionate_id: id },
+    });
+    return jurisdiction?.id ?? null;
+  }
 }

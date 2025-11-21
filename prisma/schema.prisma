@@ -149,6 +149,8 @@ model Job {
 model Jurisdiction {
   id                    String                @id @default(uuid())
   name                  String                @unique()
+  gestionate_id         Int?
+  offenders             Offender[]
   reports               Report[]
   created_at            DateTime              @default(now())
   updated_at            DateTime              @updatedAt
@@ -194,6 +196,8 @@ model Offender {
   regime                String
   shift                 String
   attendance            Boolean               @default(false)
+  jurisdiction_id       String?
+  jurisdiction          Jurisdiction?         @relation(fields: [jurisdiction_id], references: [id])
   attendances           Attendance[]
   reports               Report[]
   created_at            DateTime              @default(now())

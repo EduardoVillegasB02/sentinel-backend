@@ -5,12 +5,14 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { SearchDto } from '../../common/dto';
 import { ExternalService } from '../../external/external.service';
 import { paginationHelper, timezoneHelper } from '../../common/helpers';
+import { JurisdictionService } from '../jurisdiction/jurisdiction.service';
 
 @Injectable()
 export class OffenderService {
   constructor(
     private readonly external: ExternalService,
     private readonly prisma: PrismaService,
+    private jurisdictionService: JurisdictionService,
   ) {}
 
   async create(dni: string, attendance?: boolean): Promise<any> {
@@ -27,6 +29,7 @@ export class OffenderService {
     const newOffender = await this.prisma.offender.create({
       data: {
         ...dto,
+        attendance: attendance ?? false,
         created_at: timezoneHelper(),
         updated_at: timezoneHelper(),
       },
@@ -132,6 +135,9 @@ export class OffenderService {
       regime: personal.regimenLaboral.nombre,
       shift: personal.turno.nombre,
       subgerencia: personal.subgerencia.nombre,
+      jurisdiction_id: await this.jurisdictionService.getByGestionate(
+        personal.id_jurisdiccion,
+      ),
     };
   }
 }
