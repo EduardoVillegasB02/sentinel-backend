@@ -117,6 +117,8 @@ export class SubjectService {
     const data = rows.map((row: any) => {
       return {
         name: row.name,
+        created_at: timezoneHelper(),
+        updated_at: timezoneHelper(),
       };
     });
     await this.prisma.subject.createMany({ data });
