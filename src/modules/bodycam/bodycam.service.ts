@@ -91,18 +91,19 @@ export class BodycamService {
   }
 
   async bulkUpload(file: Express.Multer.File, req: any) {
+    const bodycams = await this.prisma.bodycam.findMany();
+    if (bodycams.length === 0)
+      throw new BadRequestException('Solo se puedo realizar una vez');
     const workbook = xlsx.read(file.buffer, { type: 'buffer' });
     const sheetName = workbook.SheetNames[0];
     const rows = xlsx.utils.sheet_to_json(workbook.Sheets[sheetName]);
-    const bodycams = rows.map((row: any) => {
+    const data = rows.map((row: any) => {
       return {
         name: row.name,
         serie: row.serie,
       };
     });
-    await this.prisma.bodycam.createMany({
-      data: bodycams,
-    });
+    await this.prisma.bodycam.createMany({ data });
     return {
       message: 'Creación masiva exitosa',
     };

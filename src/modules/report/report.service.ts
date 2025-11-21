@@ -72,7 +72,7 @@ export class ReportService {
         bodycam_user,
         header: instanceToPlain(header),
         message,
-        shift: getShift(),
+        shift: getShift(res.date),
         offender_id: offender.id,
         user_id,
         created_at: timezoneHelper(),
@@ -87,7 +87,7 @@ export class ReportService {
     const { rol } = req.user;
     const { search, jurisdiction, lack, shift, subject, ...pagination } = dto;
     const where: any = rol !== Rol.ADMINISTRATOR ? { deleted_at: null } : {};
-    const orderBy: any = [{ created_at: 'desc' }]
+    const orderBy: any = [{ created_at: 'desc' }];
     if (rol === 'VALIDATOR') {
       where.process = { not: null };
       orderBy.unshift({ process: 'asc' });
