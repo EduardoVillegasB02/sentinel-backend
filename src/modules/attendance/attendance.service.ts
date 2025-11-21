@@ -69,11 +69,14 @@ export class AttendanceService {
           },
           orderBy: { date: 'asc' },
         },
+        jurisdiction: {
+          select: { id: true, name: true },
+        }
       },
     });
     const data: any = [];
     for (const offender of offenders) {
-      const { id, name, lastname, dni, attendances } = offender;
+      const { attendances, ...res } = offender;
       const dates: any = [];
       attendances.map((a) => {
         dates.push({
@@ -83,7 +86,16 @@ export class AttendanceService {
           delete_at: a.deleted_at,
         });
       });
-      data.push({ id, name, lastname, dni, dates });
+      data.push({
+        id: res.id,
+        name: res.name,
+        lastname: res.lastname,
+        dni: res.dni,
+        job: res.job,
+        regime: res.regime,
+        jurisdiction: res.jurisdiction,
+        dates,
+      });
     }
     return data;
   }
