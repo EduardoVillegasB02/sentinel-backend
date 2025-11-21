@@ -10,12 +10,15 @@ import {
   Query,
   UseGuards,
   Req,
+  UseInterceptors,
+  UploadedFile,
 } from '@nestjs/common';
 import { LackService } from './lack.service';
 import { CreateLackDto, UpdateLackDto } from './dto';
 import { JwtAuthGuard, Roles, RolesGuard } from '../../auth/guard';
 import { SearchDto } from '../../common/dto';
 import { Request } from 'express';
+import { FileInterceptor } from '@nestjs/platform-express';
 
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('lack')
@@ -52,5 +55,12 @@ export class LackController {
   @Delete(':id')
   delete(@Param('id', ParseUUIDPipe) id: string, @Req() req: Request) {
     return this.lackService.toggleDelete(id, req);
+  }
+
+  @Roles('ADMINISTRATOR')
+  @Post('upload')
+  @UseInterceptors(FileInterceptor('file'))
+  bulkUpload(@UploadedFile() file: Express.Multer.File, @Req() req: Request) {
+    return this.lackService.bulkUpload(file, req);
   }
 }
