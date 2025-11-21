@@ -92,7 +92,7 @@ export class BodycamService {
 
   async bulkUpload(file: Express.Multer.File, req: any) {
     const bodycams = await this.prisma.bodycam.findMany();
-    if (bodycams.length === 0)
+    if (bodycams.length !== 0)
       throw new BadRequestException('Solo se puedo realizar una vez');
     const workbook = xlsx.read(file.buffer, { type: 'buffer' });
     const sheetName = workbook.SheetNames[0];
