@@ -1,5 +1,6 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { Action, Lack, Model, Rol } from '@prisma/client';
+import * as xlsx from 'xlsx';
 import { CreateLackDto, UpdateLackDto } from './dto';
 import { AuditService } from '../audit/audit.service';
 import { PrismaService } from '../../prisma/prisma.service';
@@ -96,5 +97,36 @@ export class LackService {
     if (rol !== Rol.ADMINISTRATOR && lack.deleted_at)
       throw new BadRequestException('Falta eliminada');
     return lack;
+  }
+
+  async bulkUpload(file: Express.Multer.File, req: any) {
+    const subjects = await this.prisma.subject.findMany({
+      select: { id: true, name: true },
+      where: { deleted_at: null },
+    });
+    const lacks = await this.prisma.lack.findMany();
+    if (lacks.length === 0)
+      throw new BadRequestException('Solo se puedo realizar una vez');
+    const workbook = xlsx.read(file.buffer, { type: 'buffer' });
+    const sheetName = workbook.SheetNames[0];
+    const rows = xlsx.utils.sheet_to_json(workbook.Sheets[sheetName]);
+    const data = rows
+      .map((row: any) => {
+        const subject_id = subjects.find((s) => s.name === row.subject)?.id;
+        if (!subject_id) return null;
+        return {
+          name: row.name,
+          content: 'Por agregar',
+          subject_id,
+        };
+      })
+      .filter(
+        (item): item is { name: string; content: string; subject_id: string } =>
+          item !== null,
+      );
+    await this.prisma.lack.createMany({ data });
+    return {
+      message: 'Creación masiva exitosa',
+    };
   }
 }

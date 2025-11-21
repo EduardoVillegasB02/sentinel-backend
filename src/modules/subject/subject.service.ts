@@ -1,5 +1,6 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { Action, Model, Rol, Subject } from '@prisma/client';
+import * as xlsx from 'xlsx';
 import { CreateSubjectDto, UpdateSubjectDto } from './dto';
 import { AuditService } from '../audit/audit.service';
 import { PrismaService } from '../../prisma/prisma.service';
@@ -104,5 +105,23 @@ export class SubjectService {
       orderBy: { name: 'asc' },
     });
     return subjects.map((s) => s.id);
+  }
+
+  async bulkUpload(file: Express.Multer.File, req: any) {
+    const subjects = await this.prisma.subject.findMany();
+    if (subjects.length === 0)
+      throw new BadRequestException('Solo se puedo realizar una vez');
+    const workbook = xlsx.read(file.buffer, { type: 'buffer' });
+    const sheetName = workbook.SheetNames[0];
+    const rows = xlsx.utils.sheet_to_json(workbook.Sheets[sheetName]);
+    const data = rows.map((row: any) => {
+      return {
+        name: row.name,
+      };
+    });
+    await this.prisma.subject.createMany({ data });
+    return {
+      message: 'Creación masiva exitosa',
+    };
   }
 }

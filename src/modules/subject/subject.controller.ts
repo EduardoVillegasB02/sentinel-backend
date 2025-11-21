@@ -10,12 +10,15 @@ import {
   Query,
   UseGuards,
   Req,
+  UseInterceptors,
+  UploadedFile,
 } from '@nestjs/common';
 import { SubjectService } from './subject.service';
 import { CreateSubjectDto, UpdateSubjectDto } from './dto';
 import { JwtAuthGuard, Roles, RolesGuard } from '../../auth/guard';
 import { SearchDto } from '../../common/dto';
 import { Request } from 'express';
+import { FileInterceptor } from '@nestjs/platform-express';
 
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('subject')
@@ -52,5 +55,12 @@ export class SubjectController {
   @Delete(':id')
   delete(@Param('id', ParseUUIDPipe) id: string, @Req() req: Request) {
     return this.subjectService.toggleDelete(id, req);
+  }
+
+  @Roles('ADMINISTRATOR')
+  @Post('upload')
+  @UseInterceptors(FileInterceptor('file'))
+  bulkUpload(@UploadedFile() file: Express.Multer.File, @Req() req: Request) {
+    return this.subjectService.bulkUpload(file, req);
   }
 }
