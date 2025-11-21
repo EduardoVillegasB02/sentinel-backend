@@ -114,16 +114,22 @@ export class LackService {
       .map((row: any) => {
         const subject_id = subjects.find((s) => s.name === row.subject)?.id;
         if (!subject_id) return null;
+
         return {
           name: row.name,
           content: 'Por agregar',
           subject_id,
+          created_at: timezoneHelper(),
+          updated_at: timezoneHelper(),
         };
       })
-      .filter(
-        (item): item is { name: string; content: string; subject_id: string } =>
-          item !== null,
-      );
+      .filter((item) => item !== null) as {
+        name: string;
+        content: string;
+        subject_id: string;
+        created_at: Date;
+        updated_at: Date;
+      }[];
     await this.prisma.lack.createMany({ data });
     return {
       message: 'Creación masiva exitosa',

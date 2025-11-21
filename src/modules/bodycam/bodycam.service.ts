@@ -101,6 +101,8 @@ export class BodycamService {
       return {
         name: row.name,
         serie: row.serie,
+        created_at: timezoneHelper(),
+        updated_at: timezoneHelper(),
       };
     });
     await this.prisma.bodycam.createMany({ data });
