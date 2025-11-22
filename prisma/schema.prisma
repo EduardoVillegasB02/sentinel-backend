@@ -23,6 +23,11 @@ enum Action {
   UPDATE
 }
 
+enum Cam {
+  BODYCAM
+  CAMERA
+}
+
 enum Mode {
   JUSTIFIED
   UNJUSTIFIED
@@ -117,6 +122,7 @@ model Bodycam {
   id                    String                @id @default(uuid())
   name                  String                @unique()
   serie                 String?
+  cam                   Cam                   @default(BODYCAM)
   reports               Report[]
   created_at            DateTime              @default(now())
   updated_at            DateTime              @updatedAt

@@ -60,13 +60,13 @@ export class AttendanceService {
 
   async findAll(dto: FilterAttendanceDto) {
     const { date_start, date_end } = this.validateDates(dto);
+    const where: any = { date: { gte: date_start, lte: date_end } };
+    if (dto.mode) where.mode = dto.mode;
     const offenders = await this.prisma.offender.findMany({
       where: { attendance: true, deleted_at: null },
       include: {
         attendances: {
-          where: {
-            date: { gte: date_start, lte: date_end },
-          },
+          where,
           orderBy: { date: 'asc' },
         },
         jurisdiction: {
