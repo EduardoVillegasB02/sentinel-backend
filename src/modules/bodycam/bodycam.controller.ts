@@ -13,11 +13,11 @@ import {
   UseInterceptors,
   Req,
 } from '@nestjs/common';
+import { Cam } from '@prisma/client';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { BodycamService } from './bodycam.service';
-import { CreateBodycamDto, UpdateBodycamDto } from './dto';
+import { CreateBodycamDto, FilterBodycamDto, UpdateBodycamDto } from './dto';
 import { JwtAuthGuard, Roles, RolesGuard } from '../../auth/guard';
-import { SearchDto } from '../../common/dto';
 import { Request } from 'express';
 
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -32,7 +32,7 @@ export class BodycamController {
   }
 
   @Get()
-  findAll(@Query() dto: SearchDto, @Req() req: Request) {
+  findAll(@Query() dto: FilterBodycamDto, @Req() req: Request) {
     return this.bodycamService.findAll(dto, req);
   }
 
@@ -60,7 +60,11 @@ export class BodycamController {
   @Roles('ADMINISTRATOR')
   @Post('upload')
   @UseInterceptors(FileInterceptor('file'))
-  bulkUpload(@UploadedFile() file: Express.Multer.File, @Req() req: Request) {
-    return this.bodycamService.bulkUpload(file, req);
+  bulkUpload(
+    @UploadedFile() file: Express.Multer.File,
+    @Body() dto: { cam: Cam },
+    @Req() req: Request
+  ) {
+    return this.bodycamService.bulkUpload(dto, file, req);
   }
 }
