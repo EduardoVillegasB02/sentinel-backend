@@ -7,7 +7,7 @@ export function buildSelectSubject(relations: Boolean = true) {
   if (relations)
     Object.assign(select, {
       lacks: {
-        select: { id: true, attendance: true, name: true },
+        select: { id: true, attendance: true, name: true, deleted_at: true },
       },
     });
   return select;

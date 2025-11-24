@@ -12,6 +12,7 @@ export class BodycamService {
     id: true,
     name: true,
     serie: true,
+    cam: true,
     deleted_at: true,
   };
 

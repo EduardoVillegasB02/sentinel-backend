@@ -93,6 +93,7 @@ export class AttendanceService {
         dni: res.dni,
         job: res.job,
         regime: res.regime,
+        shift: res.shift,
         jurisdiction: res.jurisdiction,
         dates,
       });

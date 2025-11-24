@@ -103,6 +103,7 @@ export class UserService {
       },
       where: { id },
     });
+    if (!inactive) await this.sessionService.deactivateAll(id);
     await this.auditService.auditDelete(Model.USER, id, inactive, req);
     return {
       action: inactive ? Action.RESTORE : Action.DELETE,

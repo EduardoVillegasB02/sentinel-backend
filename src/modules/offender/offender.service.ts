@@ -138,6 +138,7 @@ export class OffenderService {
       jurisdiction_id: await this.jurisdictionService.getByGestionate(
         personal.id_jurisdiccion,
       ),
+      email: personal.correo,
     };
   }
 }
