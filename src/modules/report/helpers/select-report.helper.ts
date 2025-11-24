@@ -11,6 +11,7 @@ export function buildSelectReport(options?: {
     header: true,
     latitude: true,
     longitude: true,
+    link: true,
     message: true,
     process: true,
     shift: true,
@@ -34,7 +35,7 @@ export function buildSelectReport(options?: {
         select: { start: true, end: true, mode: true },
       },
       bodycam: {
-        select: { id: true, name: true },
+        select: { id: true, name: true, cam: true },
       },
       jurisdiction: {
         select: { id: true, name: true },

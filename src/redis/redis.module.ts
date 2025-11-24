@@ -12,7 +12,6 @@ import { createClient } from 'redis';
       inject: [ConfigService],
       useFactory: async (config: ConfigService) => {
         const url = config.get<string>('REDIS_URL');
-        //const ttl = Number(config.get<string>('REDIS_TTL'));
         const logger = new Logger('Redis');
         const client = createClient({ url });
         client.on('error', (err) => logger.error('Redis Client Error:', err));

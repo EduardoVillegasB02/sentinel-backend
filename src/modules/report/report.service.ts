@@ -219,7 +219,7 @@ export class ReportService {
       });
       const lastCode = codes[0]?.code?.split('-')[0] ?? '0';
       const codeNumber = Number(lastCode) + 1;
-      const format = codeNumber.toString().padStart(3, '0');
+      const format = codeNumber.toString().padStart(4, '0');
       code = `${format}-${year}`;
     }
     const updated = await this.prisma.report.update({

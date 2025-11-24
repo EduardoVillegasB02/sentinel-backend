@@ -43,6 +43,12 @@ export class RedisService {
     return await this.redis.sMembers(this.getKey(key));
   }
 
+  // Remover conjunto
+  async rmembers(keys: string[]) {
+    const prefixed = keys.map(key => this.getKey(key, true));
+    return await this.redis.del(prefixed);
+  }
+
   // Expiracion de key
   async expire(key: string) {
     return await this.redis.expire(this.getKey(key), this.ttl);

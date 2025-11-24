@@ -1,10 +1,9 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { Action, Bodycam, Model, Rol } from '@prisma/client';
 import * as xlsx from 'xlsx';
-import { CreateBodycamDto, UpdateBodycamDto } from './dto';
+import { CreateBodycamDto, FilterBodycamDto, UpdateBodycamDto } from './dto';
 import { AuditService } from '../audit/audit.service';
 import { PrismaService } from '../../prisma/prisma.service';
-import { SearchDto } from '../../common/dto';
 import { paginationHelper, timezoneHelper } from '../../common/helpers';
 
 @Injectable()
@@ -13,6 +12,7 @@ export class BodycamService {
     id: true,
     name: true,
     serie: true,
+    cam: true,
     deleted_at: true,
   };
 
@@ -33,11 +33,12 @@ export class BodycamService {
     return this.getBodycamById(bodycam.id);
   }
 
-  async findAll(dto: SearchDto, req: any): Promise<any> {
+  async findAll(dto: FilterBodycamDto, req: any): Promise<any> {
     const { rol } = req.user;
-    const { search, ...pagination } = dto;
+    const { search, cam, ...pagination } = dto;
     const where: any = rol !== Rol.ADMINISTRATOR ? { deleted_at: null } : {};
     if (search) where.name = { contains: search, mode: 'insensitive' };
+    if (cam) where.cam = cam;
     const bodycams = await paginationHelper(
       this.prisma.bodycam,
       {
@@ -90,8 +91,11 @@ export class BodycamService {
     };
   }
 
-  async bulkUpload(file: Express.Multer.File, req: any) {
-    const bodycams = await this.prisma.bodycam.findMany();
+  async bulkUpload(dto: any, file: Express.Multer.File, req: any) {
+    const cam = dto.cam;
+    const bodycams = await this.prisma.bodycam.findMany({
+      where: { cam },
+    });
     if (bodycams.length !== 0)
       throw new BadRequestException('Solo se puedo realizar una vez');
     const workbook = xlsx.read(file.buffer, { type: 'buffer' });
@@ -99,8 +103,9 @@ export class BodycamService {
     const rows = xlsx.utils.sheet_to_json(workbook.Sheets[sheetName]);
     const data = rows.map((row: any) => {
       return {
-        name: row.name,
-        serie: row.serie,
+        name: String(row.name),
+        serie: row?.serie ?? null,
+        cam,
         created_at: timezoneHelper(),
         updated_at: timezoneHelper(),
       };
