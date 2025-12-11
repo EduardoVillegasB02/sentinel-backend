@@ -71,7 +71,7 @@ export class AttendanceService {
         },
         jurisdiction: {
           select: { id: true, name: true },
-        }
+        },
       },
     });
     const data: any = [];

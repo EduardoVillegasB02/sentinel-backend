@@ -13,5 +13,5 @@ export class FilterAttendanceDto extends PaginationDto {
 
   @IsOptional()
   @IsEnum(Mode)
-  mode?: Mode
+  mode?: Mode;
 }

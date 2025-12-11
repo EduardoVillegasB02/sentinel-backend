@@ -7,12 +7,15 @@ import {
   NotFoundException,
   ConflictException,
   HttpException,
+  Logger,
 } from '@nestjs/common';
 import { Observable, throwError } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 
 @Injectable()
 export class PrismaExceptionInterceptor implements NestInterceptor {
+  private logger = new Logger('Interceptor');
+
   intercept(_ctx: ExecutionContext, next: CallHandler): Observable<any> {
     return next.handle().pipe(
       catchError((error) => {
@@ -24,6 +27,7 @@ export class PrismaExceptionInterceptor implements NestInterceptor {
   }
 
   private mapPrismaToHttp(error: any): HttpException | null {
+    this.logger.error(error?.message);
     if (error && typeof error.code === 'string') {
       const code = error.code as string;
       const target = error.meta?.target?.[0] as string | undefined;

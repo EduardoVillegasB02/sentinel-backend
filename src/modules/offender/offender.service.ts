@@ -26,6 +26,7 @@ export class OffenderService {
       return offender;
     }
     const dto = await this.verifyPersonal(dni);
+    delete dto.email;
     const newOffender = await this.prisma.offender.create({
       data: {
         ...dto,

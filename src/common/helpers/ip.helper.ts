@@ -1,10 +1,12 @@
-export function getIP(req: any): string {
+import { Request } from 'express';
+
+export const getIP = (req: Request): string => {
+  const lan = req.headers['x-client-lan-ip'];
+  if (typeof lan === 'string') return lan;
   const forwarded = req.headers['x-forwarded-for'];
-  let ip = '';
-  if (typeof forwarded === 'string') ip = forwarded.split(',')[0];
-  else if (Array.isArray(forwarded)) ip = forwarded[0];
-  else ip = req.socket.remoteAddress || '';
-  if (ip === '::1' || ip.startsWith('::ffff:'))
-    ip = ip.replace('::ffff:', '') || '127.0.0.1';
-  return ip;
-}
+  if (typeof forwarded === 'string') return forwarded.split(',')[0].trim();
+  if (Array.isArray(forwarded)) return forwarded[0];
+  const remote = req.socket.remoteAddress;
+  if (typeof remote === 'string') return remote;
+  return '';
+};

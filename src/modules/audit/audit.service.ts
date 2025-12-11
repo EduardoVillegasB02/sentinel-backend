@@ -3,7 +3,7 @@ import { Action, Audit, Model, Status } from '@prisma/client';
 import { CreateAuditDto, FilterAuditDto } from './dto';
 import { buildAuditSelect } from './helpers';
 import { PrismaService } from '../../prisma/prisma.service';
-import { getIP, paginationHelper, timezoneHelper } from '../../common/helpers';
+import { paginationHelper, timezoneHelper } from '../../common/helpers';
 
 @Injectable()
 export class AuditService {
