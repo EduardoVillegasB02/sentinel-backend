@@ -27,6 +27,7 @@ enum Cam {
   BODYCAM
   CAMERA
   RADIO
+  PHONE
 }
 
 enum Mode {
