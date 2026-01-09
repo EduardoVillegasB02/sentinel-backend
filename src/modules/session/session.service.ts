@@ -53,10 +53,9 @@ export class SessionService {
   async deactivateAll(id: string): Promise<void> {
     const ips = await this.redis.smembers(id);
     if (!ips.length) return;
-    const sessionKeys = ips.map(ip => `${id}:${ip}`);
+    const sessionKeys = ips.map((ip) => `${id}:${ip}`);
     await this.redis.rmembers(sessionKeys);
-    for (const ip of ips)
-      await this.redis.srem(id, ip);
+    for (const ip of ips) await this.redis.srem(id, ip);
   }
 
   async getActiveIps(id: string): Promise<any> {

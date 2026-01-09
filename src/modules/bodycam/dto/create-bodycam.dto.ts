@@ -1,4 +1,5 @@
-import { IsNotEmpty, IsString } from 'class-validator';
+import { Cam } from '@prisma/client';
+import { IsEnum, IsNotEmpty, IsOptional, IsString } from 'class-validator';
 
 export class CreateBodycamDto {
   @IsString()
@@ -6,6 +7,9 @@ export class CreateBodycamDto {
   name: string;
 
   @IsString()
-  @IsNotEmpty()
-  serie: string;
+  @IsOptional()
+  serie?: string;
+
+  @IsEnum(Cam)
+  cam: Cam;
 }

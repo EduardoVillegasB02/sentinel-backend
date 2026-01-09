@@ -85,7 +85,7 @@ export class ReportService {
 
   async findAll(dto: FilterReportDto, req: any): Promise<any> {
     const { rol } = req.user;
-    const { search, jurisdiction, lack, shift, subject, ...pagination } = dto;
+    const { search, jurisdiction, lack, process, shift, subject, ...pagination } = dto;
     const where: any = rol !== Rol.ADMINISTRATOR ? { deleted_at: null } : {};
     const orderBy: any = [{ created_at: 'desc' }];
     if (rol === 'VALIDATOR') {
@@ -98,6 +98,7 @@ export class ReportService {
     }
     if (lack) where.lack_id = lack;
     if (jurisdiction) where.jurisdiction_id = jurisdiction;
+    if (process) where.process = process;
     if (shift) where.shift = shift;
     if (subject) where.subject_id = subject;
     const reports = await paginationHelper(

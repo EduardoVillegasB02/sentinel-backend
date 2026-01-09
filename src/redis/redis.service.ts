@@ -45,7 +45,7 @@ export class RedisService {
 
   // Remover conjunto
   async rmembers(keys: string[]) {
-    const prefixed = keys.map(key => this.getKey(key, true));
+    const prefixed = keys.map((key) => this.getKey(key, true));
     return await this.redis.del(prefixed);
   }
 

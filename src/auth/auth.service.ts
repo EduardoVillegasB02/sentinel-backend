@@ -8,6 +8,7 @@ import { getIP } from '../common/helpers';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuditService } from '../modules/audit/audit.service';
 import { SessionService } from '../modules/session/session.service';
+import { Request } from 'express';
 
 @Injectable()
 export class AuthService {
@@ -18,7 +19,7 @@ export class AuthService {
     private sessionService: SessionService,
   ) {}
 
-  async login(dto: LoginDto, req: any) {
+  async login(dto: LoginDto, req: Request) {
     const { username, password } = dto;
     const ip = getIP(req);
     const user = await this.prisma.user.findUnique({

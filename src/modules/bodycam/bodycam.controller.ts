@@ -63,7 +63,7 @@ export class BodycamController {
   bulkUpload(
     @UploadedFile() file: Express.Multer.File,
     @Body() dto: { cam: Cam },
-    @Req() req: Request
+    @Req() req: Request,
   ) {
     return this.bodycamService.bulkUpload(dto, file, req);
   }
