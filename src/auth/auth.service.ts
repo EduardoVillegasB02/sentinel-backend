@@ -31,6 +31,8 @@ export class AuthService {
         max_ips: true,
         rol: true,
         deleted_at: true,
+        name: true,
+        lastname: true,
       },
     });
     const auditData = { ip, action: Action.LOGIN, model: Model.AUTH };
@@ -94,6 +96,8 @@ export class AuthService {
       user: username,
       rol: user.rol,
       token,
+      nombre: user.name,
+      apellido: user.lastname,
     };
   }
 
