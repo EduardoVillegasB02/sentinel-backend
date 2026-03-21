@@ -2,6 +2,7 @@ import { BadRequestException, Injectable } from '@nestjs/common';
 import { Action, Model, Process, Report, Rol } from '@prisma/client';
 import { instanceToPlain } from 'class-transformer';
 import * as handlebars from 'handlebars';
+import * as ExcelJS from 'exceljs';
 import { CreateReportDto, FilterReportDto, UpdateReportDto } from './dto';
 import { buildSelectReport } from './helpers';
 import { ReportGateway } from './report.gateway';
@@ -85,7 +86,7 @@ export class ReportService {
 
   async findAll(dto: FilterReportDto, req: any): Promise<any> {
     const { rol } = req.user;
-    const { search, jurisdiction, lack, process, shift, subject, ...pagination } = dto;
+    const { search, jurisdiction, lack, process, shift, subject, subgerencia, ...pagination } = dto;
     const where: any = rol !== Rol.ADMINISTRATOR ? { deleted_at: null } : {};
     const orderBy: any = [{ created_at: 'desc' }];
     if (rol === 'VALIDATOR') {
@@ -101,6 +102,10 @@ export class ReportService {
     if (process) where.process = process;
     if (shift) where.shift = shift;
     if (subject) where.subject_id = subject;
+    if (subgerencia) {
+      if (!where.offender) where.offender = {};
+      where.offender.subgerencia = { contains: subgerencia, mode: 'insensitive' };
+    }
     const reports = await paginationHelper(
       this.prisma.report,
       {
@@ -280,6 +285,184 @@ export class ReportService {
     }
     await this.auditService.auditGetAll(Model.REPORT, req);
     return response;
+  }
+
+  async exportExcel(dto: FilterReportDto, req: any): Promise<Buffer> {
+    const { rol } = req.user;
+    const { search, jurisdiction, lack, process, shift, subject, subgerencia } = dto;
+
+    // ── Helpers ──────────────────────────────────────────────────────────────
+    const shiftLabel = (s: string) =>
+      s === 'M' ? 'Mañana' : s === 'T' ? 'Tarde' : s === 'N' ? 'Noche' : s || '';
+
+    const processLabel = (p: string | null) =>
+      p === 'PENDING' ? 'Pendiente' : p === 'APPROVED' ? 'Aprobado' : p === 'REJECTED' ? 'Rechazado' : 'Borrador';
+
+    const modeLabel = (m: string) =>
+      m === 'JUSTIFIED' ? 'Justificada' : m === 'UNJUSTIFIED' ? 'Injustificada' : '-';
+
+    const diffDays = (s: Date, e: Date) =>
+      Math.round(Math.abs(e.getTime() - s.getTime()) / (1000 * 60 * 60 * 24));
+
+    const fmtDate = (d: Date | string) =>
+      new Date(d).toISOString().substring(0, 10).split('-').reverse().join('/');
+
+    // ── Filtros ───────────────────────────────────────────────────────────────
+    const whereReports: any = { deleted_at: null };
+    if (rol === 'VALIDATOR') whereReports.process = { not: null };
+    if (search) whereReports.offender = { dni: { contains: search, mode: 'insensitive' } };
+    if (lack) whereReports.lack_id = lack;
+    if (jurisdiction) whereReports.jurisdiction_id = jurisdiction;
+    if (process) whereReports.process = process;
+    if (shift) whereReports.shift = shift;
+    if (subject) whereReports.subject_id = subject;
+    if (subgerencia) {
+      if (!whereReports.offender) whereReports.offender = {};
+      whereReports.offender.subgerencia = { contains: subgerencia, mode: 'insensitive' };
+    }
+
+    const reports = await this.prisma.report.findMany({
+      select: buildSelectReport({ relations: true }),
+      where: whereReports,
+      orderBy: [{ created_at: 'desc' }],
+    });
+
+    // ── Filas intermedias (con flag isAbsence) ────────────────────────────────
+    const intermediate = reports.map((r: any) => {
+      const absence = r.absences?.[0] ?? null;
+      const cc: string[] = ((r.header as any)?.cc || []).map((c: any) => c.name).filter(Boolean);
+      const isAbsence = (r.absences?.length > 0) || (r.lack?.name === 'Inasistencia');
+      const tipoMedio = r.bodycam ? 'Bodycam' : 'Reporte';
+      const inasistenciaTipo = isAbsence
+        ? (absence?.mode ? modeLabel(absence.mode) : (r.lack?.name || '-'))
+        : '';
+
+      return {
+        isAbsence,
+        base: [
+          r.code || '-',
+          r.offender?.dni || '',
+          r.offender ? `${r.offender.name} ${r.offender.lastname}`.trim() : '',
+          r.offender?.subgerencia || '',
+          r.offender?.job || '',
+          r.offender?.regime || '',
+          r.subject?.name || '',
+          r.lack?.name || '',
+          shiftLabel(r.shift),
+          r.date ? fmtDate(r.date) : '',
+          r.date ? r.date.toISOString().substring(11, 16) : '',
+          r.jurisdiction?.name || '',
+          tipoMedio,
+          r.bodycam?.name || '-',
+          r.bodycam_user || '-',
+          r.address || '',
+          (r.header as any)?.to?.name || '',
+          (r.header as any)?.to?.job || '',
+          cc.length ? cc.join(', ') : '-',
+          processLabel(r.process),
+          r.evidences?.length ?? 0,
+          r.link ? r.link.split('\n')[0].trim() : '',
+        ],
+        absence: [
+          inasistenciaTipo,
+          isAbsence && absence?.start ? fmtDate(absence.start) : '',
+          isAbsence && absence?.end ? fmtDate(absence.end) : '',
+          isAbsence && absence?.start && absence?.end
+            ? diffDays(new Date(absence.start), new Date(absence.end))
+            : '',
+        ],
+        registradoPor: r.user ? `${r.user.name} ${r.user.lastname}`.trim() : '',
+      };
+    });
+
+    // ── Decidir si incluir columnas de inasistencia ───────────────────────────
+    const hasAbsences = intermediate.some(r => r.isAbsence);
+
+    const baseColumns = [
+      'Código', 'DNI Infractor', 'Nombre Infractor', 'Subgerencia', 'Cargo',
+      'Régimen Laboral', 'Asunto', 'Falta', 'Turno', 'Fecha Incidente',
+      'Hora Incidente', 'Jurisdicción', 'Tipo de Medio', 'Bodycam', 'Asignada A',
+      'Dirección', 'Dirigido A', 'Cargo Destinatario', 'Con Copia A', 'Estado',
+      'Evidencias', 'Link',
+    ];
+    const absenceColumns = ['Inasistencia: Tipo', 'Inasistencia: Desde', 'Inasistencia: Hasta', 'Inasistencia: Días'];
+    const columns = hasAbsences
+      ? [...baseColumns, ...absenceColumns, 'Registrado Por']
+      : [...baseColumns, 'Registrado Por'];
+
+    const dataRows = intermediate.map(r =>
+      hasAbsences
+        ? [...r.base, ...r.absence, r.registradoPor]
+        : [...r.base, r.registradoPor],
+    );
+
+    // ── ExcelJS ───────────────────────────────────────────────────────────────
+    const workbook = new ExcelJS.Workbook();
+    workbook.creator = 'Sistema Centinela';
+    const ws = workbook.addWorksheet('Incidencias', {
+      views: [{ state: 'frozen', ySplit: 1 }],
+    });
+
+    // Estilo header
+    const headerFill: ExcelJS.Fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: 'FF1E3A5F' },
+    };
+    const headerFont: Partial<ExcelJS.Font> = { bold: true, color: { argb: 'FFFFFFFF' }, size: 11 };
+    const headerAlignment: Partial<ExcelJS.Alignment> = { vertical: 'middle', horizontal: 'center', wrapText: false };
+    const borderStyle: Partial<ExcelJS.Border> = { style: 'thin', color: { argb: 'FFBFBFBF' } };
+    const cellBorder: Partial<ExcelJS.Borders> = { top: borderStyle, left: borderStyle, bottom: borderStyle, right: borderStyle };
+
+    // Fila de encabezado
+    const headerRow = ws.addRow(columns);
+    headerRow.height = 28;
+    headerRow.eachCell(cell => {
+      cell.fill = headerFill;
+      cell.font = headerFont;
+      cell.alignment = headerAlignment;
+      cell.border = cellBorder;
+    });
+
+    // Índice de la columna "Link" (base-1)
+    const linkColIdx = columns.indexOf('Link') + 1;
+
+    // Filas de datos
+    dataRows.forEach((rowData, i) => {
+      const row = ws.addRow(rowData);
+      const isEven = i % 2 === 1;
+      row.height = 20;
+      row.eachCell({ includeEmpty: true }, (cell, colIdx) => {
+        cell.border = cellBorder;
+        cell.alignment = { vertical: 'middle', horizontal: 'left' };
+        if (isEven) {
+          cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF0F4FA' } };
+        }
+        // Hipervínculo en columna Link
+        if (colIdx === linkColIdx) {
+          const url = rowData[linkColIdx - 1] as string;
+          if (url && (url.startsWith('http://') || url.startsWith('https://'))) {
+            cell.value = { text: url, hyperlink: url };
+            cell.font = { color: { argb: 'FF1155CC' }, underline: true };
+          }
+        }
+      });
+    });
+
+    // AutoFilter en todas las columnas
+    ws.autoFilter = {
+      from: { row: 1, column: 1 },
+      to: { row: 1, column: columns.length },
+    };
+
+    // Anchos de columna automáticos
+    columns.forEach((header, i) => {
+      const colData = dataRows.map(r => String(r[i] ?? ''));
+      const maxLen = Math.max(header.length, ...colData.map(v => v.length));
+      ws.getColumn(i + 1).width = Math.min(maxLen + 3, 50);
+    });
+
+    return workbook.xlsx.writeBuffer() as unknown as Promise<Buffer>;
   }
 
   private async getReportById(

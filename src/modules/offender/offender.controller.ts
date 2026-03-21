@@ -30,6 +30,11 @@ export class OffenderController {
     return this.offenderService.findAll(dto);
   }
 
+  @Get('subgerencias')
+  getSubgerencias() {
+    return this.offenderService.getSubgerencias();
+  }
+
   @Get('dni/:dni')
   findDni(@Param('dni') dni: string) {
     return this.offenderService.findDni(dni);

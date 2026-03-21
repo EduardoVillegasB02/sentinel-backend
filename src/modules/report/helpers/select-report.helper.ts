@@ -8,6 +8,7 @@ export function buildSelectReport(options?: {
     code: true,
     date: true,
     bodycam_user: true,
+    bodycam_supervisor: true,
     header: true,
     latitude: true,
     longitude: true,
