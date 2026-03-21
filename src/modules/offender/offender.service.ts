@@ -93,6 +93,16 @@ export class OffenderService {
     return await this.verifyPersonal(dni);
   }
 
+  async getSubgerencias(): Promise<string[]> {
+    const result = await this.prisma.offender.findMany({
+      where: { subgerencia: { not: '' } },
+      select: { subgerencia: true },
+      distinct: ['subgerencia'],
+      orderBy: { subgerencia: 'asc' },
+    });
+    return result.map(r => r.subgerencia).filter(Boolean);
+  }
+
   private async getOffenderById(id: string): Promise<any> {
     const offender = await this.prisma.offender.findUnique({
       where: { id },

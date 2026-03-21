@@ -60,6 +60,69 @@ export class DashboardService {
     return trendsHelper(reports, trends);
   }
 
+  async getPerformance(filters: FilterDashboardDto) {
+    const { date_start, date_end } = this.validateDates(filters);
+
+    const groups = await this.prisma.report.groupBy({
+      by: ['user_id', 'process'],
+      where: {
+        deleted_at: null,
+        date: { gte: date_start, lte: date_end },
+      },
+      _count: { _all: true },
+    });
+
+    const userIds = [...new Set(groups.map((g) => g.user_id))];
+    const users = await this.prisma.user.findMany({
+      where: { id: { in: userIds } },
+      select: { id: true, name: true, lastname: true, rol: true },
+    });
+
+    const userMap: Record<string, any> = {};
+    users.forEach((u) => {
+      userMap[u.id] = {
+        id: u.id,
+        name: u.name,
+        lastname: u.lastname,
+        rol: u.rol,
+        total: 0,
+        draft: 0,
+        pending: 0,
+        approved: 0,
+        rejected: 0,
+      };
+    });
+
+    groups.forEach((g) => {
+      const entry = userMap[g.user_id];
+      if (!entry) return;
+      const count = g._count._all;
+      entry.total += count;
+      if (g.process === null) entry.draft += count;
+      else if (g.process === 'PENDING') entry.pending += count;
+      else if (g.process === 'APPROVED') entry.approved += count;
+      else if (g.process === 'REJECTED') entry.rejected += count;
+    });
+
+    const performance = Object.values(userMap).sort(
+      (a: any, b: any) => b.total - a.total,
+    );
+
+    const general = performance.reduce(
+      (acc: any, u: any) => {
+        acc.total += u.total;
+        acc.draft += u.draft;
+        acc.pending += u.pending;
+        acc.approved += u.approved;
+        acc.rejected += u.rejected;
+        return acc;
+      },
+      { total: 0, draft: 0, pending: 0, approved: 0, rejected: 0 },
+    );
+
+    return { general, performance };
+  }
+
   private validateDates(filters: FilterDashboardDto): any {
     const { start, end } = filters;
     if (!start || !end)

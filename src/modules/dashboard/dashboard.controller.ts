@@ -18,4 +18,9 @@ export class DashboardController {
   trends(@Query() filters: FilterDashboardDto) {
     return this.dashboardService.getTrends(filters);
   }
+
+  @Get('performance')
+  performance(@Query() filters: FilterDashboardDto) {
+    return this.dashboardService.getPerformance(filters);
+  }
 }

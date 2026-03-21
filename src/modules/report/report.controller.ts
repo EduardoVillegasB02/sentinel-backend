@@ -7,12 +7,14 @@ import {
   Param,
   Delete,
   Req,
+  Res,
   UseGuards,
   Query,
   ParseUUIDPipe,
   UploadedFiles,
   UseInterceptors,
 } from '@nestjs/common';
+import { Response } from 'express';
 import { FilesInterceptor } from '@nestjs/platform-express';
 import { memoryStorage } from 'multer';
 import { ReportService } from './report.service';
@@ -32,6 +34,18 @@ export class ReportController {
   @SuccessMessage('Mensaje generado exitosamente')
   create(@Body() dto: CreateReportDto, @Req() req: Request) {
     return this.reportService.create(dto, req);
+  }
+
+  @Get('export')
+  async exportExcel(@Query() dto: FilterReportDto, @Req() req: Request, @Res() res: Response) {
+    const buffer = await this.reportService.exportExcel(dto, req);
+    const fecha = new Date().toISOString().substring(0, 10);
+    res.set({
+      'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      'Content-Disposition': `attachment; filename="incidencias_${fecha}.xlsx"`,
+      'Content-Length': buffer.length,
+    });
+    res.end(buffer);
   }
 
   @Get()
