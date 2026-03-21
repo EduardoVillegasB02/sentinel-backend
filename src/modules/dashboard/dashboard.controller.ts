@@ -23,4 +23,9 @@ export class DashboardController {
   performance(@Query() filters: FilterDashboardDto) {
     return this.dashboardService.getPerformance(filters);
   }
+
+  @Get('offenders')
+  offenders(@Query() filters: FilterDashboardDto) {
+    return this.dashboardService.getOffenderMetrics(filters);
+  }
 }

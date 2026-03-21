@@ -123,6 +123,78 @@ export class DashboardService {
     return { general, performance };
   }
 
+  async getOffenderMetrics(filters: FilterDashboardDto) {
+    const { date_start, date_end } = this.validateDates(filters);
+
+    // Agrupar por offender_id + lack_id para contar por tipo de falta
+    const groups = await this.prisma.report.groupBy({
+      by: ['offender_id', 'lack_id'],
+      where: {
+        deleted_at: null,
+        offender_id: { not: null },
+        date: { gte: date_start, lte: date_end },
+      },
+      _count: { _all: true },
+    });
+
+    if (groups.length === 0) {
+      return { general: { totalReports: 0, totalOffenders: 0 }, performance: [] };
+    }
+
+    // Obtener offenders únicos
+    const offenderIds = [...new Set(groups.map((g) => g.offender_id).filter(Boolean))];
+    const lackIds     = [...new Set(groups.map((g) => g.lack_id).filter(Boolean))];
+
+    const [offenders, lacks] = await Promise.all([
+      this.prisma.offender.findMany({
+        where: { id: { in: offenderIds as string[] } },
+        select: { id: true, name: true, lastname: true, dni: true, subgerencia: true, job: true },
+      }),
+      this.prisma.lack.findMany({
+        where: { id: { in: lackIds as string[] } },
+        select: { id: true, name: true },
+      }),
+    ]);
+
+    const lackMap: Record<string, string> = {};
+    lacks.forEach((l) => { lackMap[l.id] = l.name; });
+
+    const offenderMap: Record<string, any> = {};
+    offenders.forEach((o) => {
+      offenderMap[o.id] = {
+        id: o.id, name: o.name, lastname: o.lastname,
+        dni: o.dni, subgerencia: o.subgerencia, job: o.job,
+        total: 0,
+        byLack: {} as Record<string, number>,
+      };
+    });
+
+    groups.forEach((g) => {
+      const entry = offenderMap[g.offender_id as string];
+      if (!entry) return;
+      const count = g._count._all;
+      entry.total += count;
+      const lackName = lackMap[g.lack_id as string] || 'Sin falta';
+      entry.byLack[lackName] = (entry.byLack[lackName] || 0) + count;
+    });
+
+    const performance = Object.values(offenderMap)
+      .map((o: any) => ({
+        ...o,
+        byLack: Object.entries(o.byLack)
+          .map(([lack, count]) => ({ lack, count }))
+          .sort((a: any, b: any) => b.count - a.count),
+      }))
+      .sort((a: any, b: any) => b.total - a.total);
+
+    const totalReports = performance.reduce((s: number, o: any) => s + o.total, 0);
+
+    return {
+      general: { totalReports, totalOffenders: performance.length },
+      performance,
+    };
+  }
+
   private validateDates(filters: FilterDashboardDto): any {
     const { start, end } = filters;
     if (!start || !end)
