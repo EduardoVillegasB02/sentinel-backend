@@ -4,7 +4,7 @@ import { FilterDashboardDto } from './dto';
 import { JwtAuthGuard, Roles, RolesGuard } from '../../auth/guard';
 
 @UseGuards(JwtAuthGuard, RolesGuard)
-@Roles('ADMINISTRATOR', 'SUPERVISOR')
+@Roles('ADMINISTRATOR', 'SUPERVISOR', 'SUBGERENTE')
 @Controller('dashboard')
 export class DashboardController {
   constructor(private readonly dashboardService: DashboardService) {}

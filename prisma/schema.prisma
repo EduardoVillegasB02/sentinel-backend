@@ -61,6 +61,7 @@ enum Rol {
   SUPERVISOR
   SENTINEL
   VALIDATOR
+  SUBGERENTE
 }
 
 enum Shift {
