@@ -375,8 +375,13 @@ export class ReportService {
       };
     });
 
-    // ── Decidir si incluir columnas de inasistencia ───────────────────────────
-    const hasAbsences = intermediate.some(r => r.isAbsence);
+    // ── Decidir si el export es exclusivamente de inasistencias ─────────────
+    // Si todos los registros son inasistencias → modo inasistencia (columnas extra)
+    // Si hay mezcla o ninguna → excluir inasistencias del export (columnas incompatibles)
+    const allAbsences = intermediate.length > 0 && intermediate.every(r => r.isAbsence);
+    const exportRows = allAbsences
+      ? intermediate                              // solo inasistencias → incluir todas
+      : intermediate.filter(r => !r.isAbsence);  // mixto/general → excluir inasistencias
 
     const baseColumns = [
       'Código', 'DNI Infractor', 'Nombre Infractor', 'Subgerencia', 'Cargo',
@@ -386,12 +391,12 @@ export class ReportService {
       'Evidencias', 'Link',
     ];
     const absenceColumns = ['Inasistencia: Tipo', 'Inasistencia: Desde', 'Inasistencia: Hasta', 'Inasistencia: Días'];
-    const columns = hasAbsences
+    const columns = allAbsences
       ? [...baseColumns, ...absenceColumns, 'Registrado Por']
       : [...baseColumns, 'Registrado Por'];
 
-    const dataRows = intermediate.map(r =>
-      hasAbsences
+    const dataRows = exportRows.map(r =>
+      allAbsences
         ? [...r.base, ...r.absence, r.registradoPor]
         : [...r.base, r.registradoPor],
     );
